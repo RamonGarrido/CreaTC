@@ -118,7 +118,7 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
                             fila_dict['CONDITION'] = {}
                             fila_dict['CONDITION']['alarm'] = condition[0]
                             fila_dict['CONDITION']['recovery'] = condition[1]
-                        else:
+                        elif 'Reactivar' in str(fila_dict['Reactivar']):
                             condition= str(fila_dict['CONDITION']).split('Reactivar')
                             fila_dict['CONDITION'] = {}
                             fila_dict['CONDITION']['alarm'] = condition[0]
@@ -136,7 +136,7 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
                         fila_dict['CONDITION'] = {}
                         fila_dict['CONDITION']['alarm'] = condition[0]
                         fila_dict['CONDITION']['recovery'] = condition[1]
-                    else:
+                    elif 'Reactivar' in str(fila_dict['CONDITION']):
                         condition= str(fila_dict['CONDITION']).split('Reactivar')
                         fila_dict['CONDITION'] = {}
                         fila_dict['CONDITION']['alarm'] = condition[0]
