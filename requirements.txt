@@ -1,0 +1,5 @@
+atlassian
+beautifulsoup4
+jira
+pandas
+python-dotenv
