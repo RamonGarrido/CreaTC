@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from jira import JIRA
 import copy
+from dotenv import load_dotenv
+import os
 
 class JiraIssue:
     def __init__(self, issueKey, issueType, userStoryKey, summary, labels, components, testType, testScope,
@@ -77,17 +79,64 @@ confluence = Confluence(
     password="temporal",
     cloud=True)
 
-componentName = "Android"
+#componentName = "Android"
+#space='VIDEOTOOLS'
+#title='Rebirth Catalog 01 - Loader (Openshift)'
+
+#space='VIDEOTOOLS'
+#title='User Extraprovision (Openshift)'
+
+#space='VIDEOTOOLS'
+#title='playback-sessions-agent'
+
+#space='VIDEOTOOLS'
+#title='top.enablers.cwf_db'
+
+#space='VIDEOTOOLS'
+#title='labels-consumer'
+
+dotenv_path = os.path.join("configs", "variables.env")
+load_dotenv(dotenv_path=dotenv_path)
+
+componentName = "top.enablers.cwf_db"
+space= os.getenv("space")
+title= os.getenv("title")
+
+modificarEnv = os.getenv("modificar")
+if modificarEnv is not None:
+    modificarEnv = modificarEnv.lower() == "true"
+
+label = os.getenv("label")
+fixVersion = os.getenv("fixVersion")
+
+if label == "None" or label == "":
+    labelEnv = None
+
+if fixVersion == "None" or fixVersion == "":
+    fixVersionEnv = None    
+
+"""
+nombre_claves_ZABBIX = {
+    3: "patternToSearch",
+    4: "severity",
+    5: "alarmName",
+    6: "alarmText",
+    7: "condition",
+    8: "action",
+    12: "Test Case ID"
+}
+"""
 
 nombre_claves_ZABBIX = {
-    "PATTERN TO SEARCH": "patternToSearch",
-    "SEVERITY": "severity",
-    "ALARM NAME": "alarmName",
-    "ALARM TEXT": "alarmText",
-    "CONDITION": "condition",
-    "ACTION": "action",
-    "Test Case ID": "Test Case ID"
+    2: "patternToSearch",
+    3: "severity",
+    4: "alarmName",
+    5: "alarmText",
+    6: "condition",
+    7: "action",
+    11: "Test Case ID"
 }
+
 
 listaIssueKibana = []
 
@@ -107,55 +156,59 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
             soup = BeautifulSoup(html_completo, 'html.parser')
             table = soup.find('table')
             df = pd.read_html(str(table))[0]
-            columnas_deseadas = ['PATTERN TO SEARCH', 'SEVERITY','ALARM NAME','ALARM TEXT','CONDITION','ACTION','Test Case ID']
-            df_seleccionado = df[columnas_deseadas]
+            #columnas_deseadas = ['PATTERN TO SEARCH','SEVERITY','ALARM NAME','ALARM TEXT','CONDITION','ACTION','Test Case ID']
+            #columnas_deseadas_indices = [3,4,5,6,7,8,12]
+            columnas_deseadas_indices = [2,3,4,5,6,7,11]
+            #df_seleccionado = df[columnas_deseadas]
+            max_index = df.shape[1] - 1
+            if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+                columnas_deseadas_nombres = [df.columns[idx] for idx in columnas_deseadas_indices]
+                df_seleccionado = df[columnas_deseadas_nombres]
+                df_seleccionado.columns = columnas_deseadas_indices
+            else:
+                print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
+
             if modificar == False:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
-                    if pd.isnull(fila_dict['Test Case ID']):
-                        if 'Recuperación' in str(fila_dict['CONDITION']):
-                            condition= str(fila_dict['CONDITION']).split('Recuperación')
-                            fila_dict['CONDITION'] = {}
-                            fila_dict['CONDITION']['alarm'] = condition[0]
-                            fila_dict['CONDITION']['recovery'] = condition[1]
-                        elif 'Reactivar' in str(fila_dict['Reactivar']):
-                            condition= str(fila_dict['CONDITION']).split('Reactivar')
-                            fila_dict['CONDITION'] = {}
-                            fila_dict['CONDITION']['alarm'] = condition[0]
-                            fila_dict['CONDITION']['recovery'] = condition[1]
-
-                        #nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items()}
-                        nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
-                        listaZabbix.append(nuevo_data)
+                    if 'Recuperación' in str(fila_dict[6]):
+                            condition= str(fila_dict[6]).split('Recuperación')
+                            fila_dict[6] = {}
+                            fila_dict[6]['alarm'] = condition[0]
+                            fila_dict[6]['recovery'] = condition[1]
+                        
+                    nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items()}
+                    #nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
+                    #if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
+                    #    nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
+                    listaZabbix.append(nuevo_data)
             
             elif modificar == True:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
-                    if 'Recuperación' in str(fila_dict['CONDITION']):
-                        condition = str(fila_dict['CONDITION']).split('Recuperación')
-                        fila_dict['CONDITION'] = {}
-                        fila_dict['CONDITION']['alarm'] = condition[0]
-                        fila_dict['CONDITION']['recovery'] = condition[1]
-                    elif 'Reactivar' in str(fila_dict['CONDITION']):
-                        condition= str(fila_dict['CONDITION']).split('Reactivar')
-                        fila_dict['CONDITION'] = {}
-                        fila_dict['CONDITION']['alarm'] = condition[0]
-                        fila_dict['CONDITION']['recovery'] = condition[1]
+                    if 'Recuperación' in str(fila_dict[6]):
+                        condition = str(fila_dict[6]).split('Recuperación')
+                        fila_dict[6] = {}
+                        fila_dict[6]['alarm'] = condition[0]
+                        fila_dict[6]['recovery'] = condition[1]
 
-                    if pd.isna(fila_dict['Test Case ID']):
-                        fila_dict['Test Case ID'] = " "
+                    if pd.isna(fila_dict[11]):
+                        fila_dict[11] = " "
     
                     nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
     
-                    if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict['Test Case ID']):
-                        nuevo_data[nombre_claves_ZABBIX['Test Case ID']] = fila_dict['Test Case ID']
-    
+                    if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
+                        nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
+                
                     listaZabbix.append(nuevo_data)
+            if (listaZabbix[0]['Test Case ID'] == 'Test Case ID'):
+                ultimoElemento = listaZabbix.pop(0)
+            print (listaZabbix)
             return listaZabbix
         
         case 'GRAFANA PLATFORM':
             listaGrafana = []
-            contenidoSplit = contenido.split(referencia)
+            contenidoSplit = contenido.split("Referencia Grafana Plataforma QA")
             soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
             table = soup.find('table')
             df = pd.read_html(str(table))[0]  
@@ -166,7 +219,8 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
             if modificar == False:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
-                    if not pd.isnull(fila_dict[2]) and not pd.isnull(fila_dict[4]) and not pd.isnull(fila_dict[5]) and not pd.isnull(fila_dict[6]):
+
+                    if not pd.isnull(fila_dict[2]):
                         nuevo_data = {
                             "Metric": fila_dict[2],
                             "DB en Influx": fila_dict[4],
@@ -175,6 +229,7 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
                             "Test Case ID": fila_dict[7]
                         }
                         listaGrafana.append(nuevo_data)
+                        print (nuevo_data)
             elif modificar == True:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
@@ -194,26 +249,46 @@ def obtenerTextoConf(monitorizacion,contenido,referencia,modificar):
         
         case 'GRAFANA PROMETHEUS':
             listaGrafana = []
+
             contenidoSplit = contenido.split(referencia)
+
             html_con_saltos = contenidoSplit[1].replace('<p>', '<p><br>')
             soup = BeautifulSoup(html_con_saltos, 'html.parser')
-            table = soup.find('table')
-            df = pd.read_html(str(table))[0]  
-            columnas_deseadas = ['Metric', 'Type','DB En Influx','Medida','Métrica','Test Case ID']
+
+            tablas = soup.find_all('table')
+
+            table = tablas[0]
+            df = pd.read_html(str(table))[0]
+
+            columnas_deseadas = ['Metric', 'Type', 'DB En Influx', 'Medida', 'Métrica', 'Test Case ID']
+            columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
+
+            max_index = df.shape[1] - 1
+            if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+                columnas_deseadas_nombres = [df.columns[idx] for idx in columnas_deseadas_indices]
+                df_seleccionado = df[columnas_deseadas_nombres]
+                df_seleccionado.columns = columnas_deseadas_indices
+            else:
+                print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
+
             df_seleccionado = df[columnas_deseadas]
 
             if modificar == False:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
                     if pd.isnull(fila_dict['Test Case ID']):
-                        fila_dict['Métrica'] = fila_dict['Métrica'].replace(' ', '\n')
+                        if not pd.isnull(fila_dict['Métrica']):
+                            fila_dict['Métrica'] = fila_dict['Métrica'].replace(' ', '\n')
                         listaGrafana.append(fila_dict)
+
             elif modificar == True:
                 for index, fila in df_seleccionado.iterrows():
                     fila_dict = fila.to_dict()
                     fila_dict['Métrica'] = fila_dict['Métrica'].replace(' ', '\n')
                     listaGrafana.append(fila_dict)
+
             return listaGrafana
+
         
         case 'KIBANA':
             listaKibana = []
@@ -240,16 +315,23 @@ def conversorJson(procedure):
 # monitorizacion(str): tipo de monitorización
 # datosFijos(diccionario): Datos obtenidos del JSON datosFijos.json
 # datoConfluence(lista): Datos obtenidos de Confluence (obtenerTextoConf)
-def createSummary(monitorizacion,datosFijos,datoConfluence):
+def createSummary(monitorizacion, datosFijos, datoConfluence, componente=None, functionName=None):
     match monitorizacion:
         case 'ZABBIX':
-            return "["+datosFijos[monitorizacion]["Monitorizacion"]+"] ["+componentName+"] - "+datoConfluence["severity"]+" - "+datoConfluence["alarmName"]
+            return f"[{datosFijos[monitorizacion]['Monitorizacion']}] " + (f"[{componente}] " if componente else "") + f"- {datoConfluence['severity']} - {datoConfluence['alarmName']}"
         case 'GRAFANA PLATFORM':
-            return "["+datosFijos[monitorizacion]["Monitorizacion"]+"] ["+componentName+"] - PLATFORM METRICS - "+datoConfluence["Metric"]
+            return f"[{datosFijos[monitorizacion]['Monitorizacion']}] " + (f"[{componente}] " if componente else "") + "PLATFORM METRICS - " + datoConfluence["Metric"]
         case 'GRAFANA PROMETHEUS':
-            return "["+datosFijos[monitorizacion]["Monitorizacion"]+"] ["+componentName+"] - PROMETHEUS METRICS - "+datoConfluence["Metric"]
+            # Extraer el nombre de la métrica antes de '{' si existe
+            metric_name = datoConfluence["Metric"]
+            if "{" in metric_name:
+                metric_name = metric_name.split("{")[0]  # Obtener solo la parte antes del '{'
+            
+            return f"[{datosFijos[monitorizacion]['Monitorizacion']}] " + \
+                (f"[{componente}] " if componente else "") + \
+                "PROMETHEUS METRICS - " + metric_name
         case 'KIBANA':
-            return "["+datosFijos[monitorizacion]["Monitorizacion"]+"] ["+componentName+"] - "+datoConfluence[0][0]['functionName']+" fields mapping using index "+datoConfluence[0][0]["indice"]
+            return f"[{datosFijos[monitorizacion]['Monitorizacion']}] " + (f"[{componente}] " if componente else "") + f"- {functionName} fields mapping using index {datoConfluence[0][0]['indice']}"
 
 def convertStringToArray(stringData):
     arrayData = str(stringData).replace(" ", "").split(',')
@@ -273,66 +355,127 @@ def convertArrayToComponentList(nameField, array):
 # monitorizacion(str): tipo de monitorización
 # datosFijos(diccionario): Datos obtenidos del JSON datosFijos.json
 # datoConfluence(lista): Datos obtenidos de Confluence (obtenerTextoConf)
-def actualizarDatosFijos(monitorizacion,datosConf,datosFijos):
+def actualizarDatosFijos(monitorizacion,datosConf,datosFijos,componente,fn=None):
 
     match monitorizacion:
         case 'ZABBIX':
-            alarmName = datosConf['alarmName']
-            severity = datosConf['severity']
-            alarmName = datosConf['alarmName']
-            alarmText = datosConf['alarmText']
-            action = datosConf['action']
-            patternToSearch = datosConf['patternToSearch']
-            condition = datosConf['condition']['alarm']
-            recovery = datosConf['condition']['recovery']
+            alarmName = str(datosConf.get('alarmName', ''))  
+            severity = str(datosConf.get('severity', ''))  
+            alarmText = str(datosConf.get('alarmText', ''))  
+            action = str(datosConf.get('action', ''))  
+            patternToSearch = str(datosConf.get('patternToSearch', ''))  
 
-            datosFijos[monitorizacion]['Procedure']['AND'] = datosFijos[monitorizacion]['Procedure']['AND'].replace('ALARMNAME',alarmName)
-            datosFijos[monitorizacion]['Procedure']['AND'] = datosFijos[monitorizacion]['Procedure']['AND'].replace('COMPONENTNAME',componentName)
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('SEVERITY',severity)
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ALARMNAME',alarmName)
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ALARMTEXT',alarmText)
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ACTION',action)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('PATTERNTOSEARCH',patternToSearch)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('CONDITION',condition)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('RECOVERY',recovery)
+            condition_dict = datosConf.get('condition', {})  
+            condition = str(condition_dict.get('alarm', '')) if isinstance(condition_dict, dict) else '' 
+            recovery = str(condition_dict.get('recovery', '')) if isinstance(condition_dict, dict) else '' 
+
+            datosFijos[monitorizacion]['Procedure']['AND'] = datosFijos[monitorizacion]['Procedure']['AND'].replace('ALARMNAME', alarmName)
+            datosFijos[monitorizacion]['Procedure']['AND'] = datosFijos[monitorizacion]['Procedure']['AND'].replace('COMPONENTNAME', componente)
+
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('SEVERITY', severity)
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ALARMNAME', alarmName)
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ALARMTEXT', alarmText)  # Convertido a cadena
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace('ACTION', action)
+
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('PATTERNTOSEARCH', patternToSearch)
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('CONDITION', condition)
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('RECOVERY', recovery)
+
+            dbInflux = str(datosConf.get('DB En Influx', ''))  
+            medida = str(datosConf.get('Medida', ''))  
+            metrica = str(datosConf.get('Métrica', '')) 
+            type = str(datosConf.get('Type', '')) 
+
+            datosFijos[monitorizacion]['PreRequisites'] = datosFijos[monitorizacion]['PreRequisites'].replace('DBINFLUX', dbInflux)
+
+            if medida:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('MEDIDA', medida)
+
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('METRIC', componente)
+
+            if metrica:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('M\u00e9trica', metrica)
+
+            if type:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('TYPE', type)
+
             datosFijos[monitorizacion]['Procedure'] = conversorJson(datosFijos[monitorizacion]['Procedure'])
-            
-            return datosFijos
-        
-        case 'KIBANA':
-            functionName = datosConf[0][0]['functionName']
-            cont = ""
 
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace("FUNCTIONNAME",functionName)
-            for i in datosConf[1]:
-                    cont = cont +"\n|"+str(i['Update'])+"|"+str(i["Release top.catalog.conversor"])+"|"+str(i["Field"])+"|"+str(i["Name"])+"|"+str(i["Type"])+"|"+str(i["Description"])+"|"+str(i["Required in Kibana"])+"|"+str(i["Example"])+"|"
-                    cont = cont.replace("nan"," ")
-                    
-            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace("CONTENT",cont)
             return datosFijos
+
+                
+        case 'KIBANA':
+            # Convertir 'fn' a cadena, utilizando una cadena vacía si 'fn' es None o no es str
+            functionName = str(fn) if fn is not None else ""
+
+            cont = "\n|"
+            
+            # Generar el encabezado de forma segura, manejando valores vacíos
+            encabezado = "||*" + "*||*".join([
+                str(v) if v is not None else ""  # Convertir a cadena solo si v no es None
+                for k, v in datosConf[1][0].items()
+            ]) + "*||" if datosConf[1] else "||"  # Encabezado vacío si datosConf[1] está vacío
+            
+            # Reemplazos en ExpectedResult con valores predeterminados
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace("TITULOS", encabezado)
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace("FUNCTIONNAME", functionName)
+            
+            # Generar el contenido con valores vacíos por defecto cuando sea necesario
+            for i in datosConf[1]:
+                cont += "\n|"
+                for key in i.keys():
+                    value = str(i[key]) if i[key] is not None else ""  # Valor vacío si es None
+                    cont += value + "|"
+            
+            # Reemplazar 'CONTENT' en ExpectedResult solo si 'cont' tiene contenido
+            datosFijos[monitorizacion]['ExpectedResult'] = datosFijos[monitorizacion]['ExpectedResult'].replace("CONTENT", cont)
+
+            return datosFijos
+
 
         case 'GRAFANA PLATFORM':
-            dbInflux = datosConf['DB en Influx']
-            medida = datosConf['Medida']
-            metrica = datosConf['Metrica']
+            # Obtener valores de 'datosConf', usando una cadena vacía por defecto si algún valor no está presente
+            dbInflux = str(datosConf.get('DB en Influx', ''))  # Valor por defecto vacío si falta o es None
+            medida = str(datosConf.get('Medida', ''))  # Valor por defecto vacío si falta o es None
+            metrica = str(datosConf.get('Metrica', ''))  # Valor por defecto vacío si falta o es None
             
-            datosFijos[monitorizacion]['PreRequisites'] = datosFijos[monitorizacion]['PreRequisites'].replace('DBINFLUX',dbInflux)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('MEDIDA',medida)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('POD',componentName)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('METRICA',metrica)
+            # Reemplazos en 'PreRequisites' y 'DataSet'
+            datosFijos[monitorizacion]['PreRequisites'] = datosFijos[monitorizacion]['PreRequisites'].replace('DBINFLUX', dbInflux)
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('MEDIDA', medida)
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('POD', componentName)
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('METRICA', metrica)
 
             return datosFijos
+
         
         case 'GRAFANA PROMETHEUS':
-            dbInflux = datosConf['DB En Influx']
-            medida = datosConf['Medida']
-            metrica = datosConf['Métrica']
-            type = datosConf['Type']
-            datosFijos[monitorizacion]['PreRequisites'] = datosFijos[monitorizacion]['PreRequisites'].replace('DBINFLUX',dbInflux)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('MEDIDA',medida)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('METRIC',componentName)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('M\u00e9trica',metrica)
-            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('TYPE',type)
+            dbInflux = datosConf.get('DB En Influx', '')  # Default to empty string if not present
+            medida = datosConf.get('Medida', '')  # Default to empty string if not present
+            metrica = datosConf.get('Métrica', '')  # Default to empty string if not present
+            type = datosConf.get('Type', '')  # Default to empty string if not present
+
+            # Asegurarse de que los valores numéricos se convierten a cadena antes de hacer replace
+            medida = str(medida) if medida else ''  # Convertir a str si existe, sino dejar vacío
+            metrica = str(metrica) if metrica else ''  # Convertir a str si existe
+            type = str(type) if type else ''  # Convertir a str si existe
+
+            # Reemplazar 'DBINFLUX' en 'PreRequisites'
+            datosFijos[monitorizacion]['PreRequisites'] = datosFijos[monitorizacion]['PreRequisites'].replace('DBINFLUX', dbInflux)
+
+            # Reemplazar 'MEDIDA' solo si el valor 'medida' está presente
+            if medida:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('MEDIDA', medida)
+
+            # Reemplazar 'METRIC' con 'componentName'
+            datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('METRIC', componentName)
+
+            # Reemplazar 'Métrica' solo si 'metrica' está presente
+            if metrica:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('M\u00e9trica', metrica)
+
+            # Reemplazar 'TYPE' solo si 'type' está presente
+            if type:
+                datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace('TYPE', type)
 
             return datosFijos
 
@@ -366,22 +509,24 @@ def creaJira(project,monitorizacion,datosConfluence,modificar,componente,label=N
             listaIssueZabbix = []
             for dato in datosConfluence:
                 datosFijos = cargarJson('datosFijos.json')
-                datosFijos = actualizarDatosFijos(monitorizacion,dato,datosFijos)
+                datosFijos = actualizarDatosFijos(monitorizacion,dato,datosFijos,componente)
 
-                x = fixVersion.split(",")
-                y = []
-                for i in x:
-                    temporal = {'name':i}
-                    y.append(temporal)
+                if fixVersion is not None:
+                    fixVersionSplit = fixVersion.split(",")
+                    fixVersionFinal = []
+                    for fv in fixVersionSplit:
+                        temporal = {'name':fv}
+                        fixVersionFinal.append(temporal)
+                else:
+                    fixVersionFinal = None
                 
-                for z in y:
-                    print (z)
+                
 
-                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,dato),label,componente,datosFijos[monitorizacion]['TestType'],
+                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,dato,componente),label,componente,datosFijos[monitorizacion]['TestType'],
                                     datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
                                     datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
                                     "",datosFijos[monitorizacion]['PreRequisites'],datosFijos[monitorizacion]['DataSet'],
-                                    datosFijos[monitorizacion]['Procedure'],datosFijos[monitorizacion]['ExpectedResult'],project,y)
+                                    datosFijos[monitorizacion]['Procedure'],datosFijos[monitorizacion]['ExpectedResult'],project,fixVersionFinal)
                 
                 if modificar == True:
                     key = dato['Test Case ID']
@@ -402,6 +547,19 @@ def creaJira(project,monitorizacion,datosConfluence,modificar,componente,label=N
                         listaIssueZabbix.append(str(jiraIssue.issueKey))
                 
                 elif modificar == False:
+                    print ("AQUI LLEGA")
+                    if 'Test Case ID' in dato:
+                        key = dato['Test Case ID']
+                        ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                        if ticket_existente:
+                            print ("TC EXISTENTE: "+str(key))
+                        else:
+                            print (jiraIssue.summary)
+                            jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                            listaIssueZabbix.append(str(jiraIssue.issueKey))
+                            print(f'Ticket {jiraIssue.issueKey} creado.')
+                            print (jiraIssue.issueKey)
+                    else:
                         print (jiraIssue.summary)
                         jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
                         listaIssueZabbix.append(str(jiraIssue.issueKey))
@@ -415,12 +573,22 @@ def creaJira(project,monitorizacion,datosConfluence,modificar,componente,label=N
             listaIssueGrafanaPlatform = []
             for dato in datosConfluence:
                 datosFijos = cargarJson('datosFijos.json')
-                datosFijos = actualizarDatosFijos(monitorizacion,dato,datosFijos)
-                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,dato),label,componente,datosFijos[monitorizacion]['TestType'],
+                datosFijos = actualizarDatosFijos(monitorizacion,dato,datosFijos,componente)
+                
+                if fixVersion is not None:
+                    fixVersionSplit = fixVersion.split(",")
+                    fixVersionFinal = []
+                    for fv in fixVersionSplit:
+                        temporal = {'name':fv}
+                        fixVersionFinal.append(temporal)
+                else:
+                    fixVersionFinal = None
+
+                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,dato,componente),label,componente,datosFijos[monitorizacion]['TestType'],
                                     datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
                                     datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
                                     datosFijos[monitorizacion]['Description'],datosFijos[monitorizacion]['PreRequisites'],datosFijos[monitorizacion]['DataSet'],
-                                   "","",project,fixVersion)
+                                   "","",project,fixVersionFinal)
                 
                 if modificar == True:
                     key = dato['Test Case ID']
@@ -455,84 +623,184 @@ def creaJira(project,monitorizacion,datosConfluence,modificar,componente,label=N
 
         case 'GRAFANA PROMETHEUS':
             listaIssueGrafanaPrometheus = []
-            for dato in datosConfluence:
-                datosFijos = cargarJson('datosFijos.json')
-                datosFijos = actualizarDatosFijos(monitorizacion,dato,datosFijos)
-                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,dato),label,componente,datosFijos[monitorizacion]['TestType'],
-                                    datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
-                                    datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
-                                    datosFijos[monitorizacion]['Description'],datosFijos[monitorizacion]['PreRequisites'],datosFijos[monitorizacion]['DataSet'],
-                                   "","",project,fixVersion)
-                if modificar == True:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(jira, key)
-                    if ticket_existente:
-                        fields_to_update = createIssueDict(jiraIssue)
-                        fields_to_update.pop('key', None)
-                        ticket_existente.update(fields=fields_to_update)
-                        print(f'Ticket {ticket_existente.key} actualizado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueGrafanaPrometheus.append(ticket_existente)
-                    else:
-                        jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueGrafanaPrometheus.append(str(jiraIssue.issueKey))
-                
-                elif modificar == False:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(jira, key)
-                    if ticket_existente:
-                        print ("TC EXISTENTE: "+str(key))
-                    else:
-                        print (jiraIssue.summary)
-                        jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
-                        listaIssueGrafanaPrometheus.append(str(jiraIssue.issueKey))
-                        print (jiraIssue.issueKey)
+            metrics_dict = {}  
+            created_tickets = set()
 
+            for dato in datosConfluence:
+
+                if "{" in dato["Metric"]:
+                    metric_name = dato["Metric"].split("{")[0]  
+                    metric_params = dato["Metric"].split("{", 1)[1].strip("}")
+                else:
+                    metric_name = dato["Metric"]
+                    metric_params = None
+
+                
+                if metric_name not in metrics_dict:
+                    metrics_dict[metric_name] = []  
+
+                if metric_params:
+                    metrics_dict[metric_name].append(f"{{{metric_params}}}") 
+
+            for metric_name, params in metrics_dict.items():
+                datosFijos = cargarJson('datosFijos.json')
+                datosFijos = actualizarDatosFijos(monitorizacion, {"Metric": metric_name}, datosFijos, componente)
+                dataset_content = datosFijos[monitorizacion]['DataSet']
+
+                new_table = "\n\n\n|| Metric ||\n"
+                for param in params:
+                    new_table += f"| {param} |\n"  
+
+
+                dataset_content += "\n" + new_table
+
+                if fixVersion is not None:
+                    fixVersionSplit = fixVersion.split(",")
+                    fixVersionFinal = [{'name': fv} for fv in fixVersionSplit]
+                else:
+                    fixVersionFinal = None
+
+                jiraIssue = JiraIssue(
+                    "", "Test Case", "",
+                    createSummary(monitorizacion, datosFijos, {"Metric": metric_name}, componente),
+                    label, componente,
+                    datosFijos[monitorizacion]['TestType'],
+                    datosFijos[monitorizacion]['TestScope'],
+                    datosFijos[monitorizacion]['ExecutionMode'],
+                    datosFijos[monitorizacion]['AutomationCandidate'],
+                    datosFijos[monitorizacion]['Regression'],
+                    datosFijos[monitorizacion]['TestPriority'],
+                    datosFijos[monitorizacion]['TestReviewed'],
+                    datosFijos[monitorizacion]['Description'],
+                    datosFijos[monitorizacion]['PreRequisites'],
+                    dataset_content,  
+                    "", "", project, fixVersionFinal
+                )
+
+                if metric_name not in created_tickets:
+                    if modificar:
+                        key = dato['Test Case ID']
+                        ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                        if ticket_existente:
+                            fields_to_update = createIssueDict(jiraIssue)
+                            fields_to_update.pop('key', None)
+                            ticket_existente.update(fields=fields_to_update)
+                            print(f'Ticket {ticket_existente.key} actualizado.')
+                            print(jiraIssue.summary)
+                            print(jiraIssue.issueKey)
+                            listaIssueGrafanaPrometheus.append(ticket_existente)
+                        else:
+                            jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                            created_tickets.add(metric_name)  
+                            print(f'Ticket {jiraIssue.issueKey} creado.')
+                            print(jiraIssue.summary)
+                            print(jiraIssue.issueKey)
+                            listaIssueGrafanaPrometheus.append(str(jiraIssue.issueKey))
+                    else:  
+                        key = dato['Test Case ID']
+                        ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                        if ticket_existente:
+                            print("TC EXISTENTE: " + str(dato['Test Case ID']))
+                        else:
+                            print(jiraIssue.summary)
+                            jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                            created_tickets.add(metric_name)  
+                            listaIssueGrafanaPrometheus.append(str(jiraIssue.issueKey))
+                            print(jiraIssue.issueKey)
+
+                    
             modificarTesCaseId(listaIssueGrafanaPrometheus,'GRAFANA PROMETHEUS',modificar)
         
         case 'KIBANA':
-                datosFijos = cargarJson('datosFijos.json')
-                datosFijos = actualizarDatosFijos(monitorizacion,datosConfluence,datosFijos)
-                jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,datosConfluence),label,componente,datosFijos[monitorizacion]['TestType'],
-                                    datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
-                                    datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
-                                    "","",datosFijos[monitorizacion]['DataSet'],
-                                   "",datosFijos[monitorizacion]['ExpectedResult'],project,fixVersion)
+                if fixVersion is not None:
+                    fixVersionSplit = fixVersion.split(",")
+                    fixVersionFinal = []
+                    for fv in fixVersionSplit:
+                        temporal = {'name':fv}
+                        fixVersionFinal.append(temporal)
+                else:
+                    fixVersionFinal = None
                 
-                if modificar == True:
-                    key = datosConfluence[0][0]['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(jira, key)
-                    if ticket_existente:
-                        fields_to_update = createIssueDict(jiraIssue)
-                        fields_to_update.pop('key', None)
-                        ticket_existente.update(fields=fields_to_update)
-                        print(f'Ticket {ticket_existente.key} actualizado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueKibana.append(ticket_existente)
-                    else:
-                        jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueKibana.append(str(jiraIssue.issueKey))
-                
-                elif modificar == False:
-                    key = datosConfluence[0][0]['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(jira, key)
-                    if ticket_existente:
-                        print ("TC EXISTENTE: "+str(key))
-                    else:
-                        print (jiraIssue.summary)
-                        jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
-                        listaIssueKibana.append(str(jiraIssue.issueKey))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print (jiraIssue.issueKey)
+                if len(datosConfluence[0]) > 1:
+                    for dato in datosConfluence[0]:
+                        datosFijos = cargarJson('datosFijos.json')
+                        datosFijos = actualizarDatosFijos(monitorizacion,datosConfluence,datosFijos,componente,dato['functionName'])
 
+                        jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,datosConfluence,componente,dato['functionName']),label,componente,datosFijos[monitorizacion]['TestType'],
+                                            datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
+                                            datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
+                                            "","",datosFijos[monitorizacion]['DataSet'],
+                                        "",datosFijos[monitorizacion]['ExpectedResult'],project,fixVersionFinal)
+                        
+
+                        if modificar == True:
+                            key = dato['Test Case ID']
+                            ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                            if ticket_existente:
+                                fields_to_update = createIssueDict(jiraIssue)
+                                fields_to_update.pop('key', None)
+                                ticket_existente.update(fields=fields_to_update)
+                                print(f'Ticket {ticket_existente.key} actualizado.')
+                                print(jiraIssue.summary)
+                                print(jiraIssue.issueKey)
+                                listaIssueKibana.append(ticket_existente)
+                            else:
+                                jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                                print(f'Ticket {jiraIssue.issueKey} creado.')
+                                print(jiraIssue.summary)
+                                print(jiraIssue.issueKey)
+                                listaIssueKibana.append(str(jiraIssue.issueKey))
+                        elif modificar == False:
+                            key = dato['Test Case ID']
+                            ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                            if ticket_existente:
+                                print ("TC EXISTENTE: "+str(key))
+                            else:
+                                print (jiraIssue.summary)
+                                jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                                listaIssueKibana.append(str(jiraIssue.issueKey))
+                                print(f'Ticket {jiraIssue.issueKey} creado.')
+                                print (jiraIssue.issueKey)
+
+                else:
+                    datosFijos = cargarJson('datosFijos.json')
+                    datosFijos = actualizarDatosFijos(monitorizacion,datosConfluence,datosFijos,componente,datosConfluence[0][0]['functionName'])
+
+                    jiraIssue = JiraIssue("","Test Case","",createSummary(monitorizacion,datosFijos,datosConfluence,componente,datosConfluence[0][0]['functionName']),label,componente,datosFijos[monitorizacion]['TestType'],
+                                        datosFijos[monitorizacion]['TestScope'],datosFijos[monitorizacion]['ExecutionMode'],datosFijos[monitorizacion]['AutomationCandidate'],
+                                        datosFijos[monitorizacion]['Regression'],datosFijos[monitorizacion]['TestPriority'],datosFijos[monitorizacion]['TestReviewed'],
+                                        "","",datosFijos[monitorizacion]['DataSet'],
+                                    "",datosFijos[monitorizacion]['ExpectedResult'],project,fixVersionFinal)
+                    
+                    if modificar == True:
+                        key = datosConfluence[0][0]['Test Case ID']
+                        ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                        if ticket_existente:
+                            fields_to_update = createIssueDict(jiraIssue)
+                            fields_to_update.pop('key', None)
+                            ticket_existente.update(fields=fields_to_update)
+                            print(f'Ticket {ticket_existente.key} actualizado.')
+                            print(jiraIssue.summary)
+                            print(jiraIssue.issueKey)
+                            listaIssueKibana.append(ticket_existente)
+                        else:
+                            jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                            print(f'Ticket {jiraIssue.issueKey} creado.')
+                            print(jiraIssue.summary)
+                            print(jiraIssue.issueKey)
+                            listaIssueKibana.append(str(jiraIssue.issueKey))
+                    else:
+                        key = datosConfluence[0][0]['Test Case ID']
+                        ticket_existente = buscar_ticket_existente_por_key(jira, key)
+                        if ticket_existente:
+                            print ("TC EXISTENTE: "+str(key))
+                        else:
+                            print (jiraIssue.summary)
+                            jiraIssue.issueKey = jira.create_issue(fields=createIssueDict(jiraIssue))
+                            listaIssueKibana.append(str(jiraIssue.issueKey))
+                            print(f'Ticket {jiraIssue.issueKey} creado.')
+                            print (jiraIssue.issueKey)
+                
 def crearJson(diccionario,archivo):
     with open(archivo, 'w') as file:
         json.dump(diccionario, file, indent=4)
@@ -560,148 +828,167 @@ def actualizarConfluence(titulo,page,htmlActualizado,comentario):
 def modificarTesCaseId(key,monitorizacion,modificar):
 
     match monitorizacion:
+        
         case 'ZABBIX':
-            space='QAVIDEO'
-            title='pruebas QA'
+            space = os.getenv("space")
+            title = os.getenv("title")
             page = confluence.get_page_by_title(space, title)
+
             if page:
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
                 tablas = contenido_completo_soup.find_all('table')
+
                 if modificar == False:
-                    indiceTabla = 12
-                    if indiceTabla < len(tablas):
-                        table = tablas[indiceTabla]
+                    frase = "3.2.3 PARSEO DE ARCHIVOS DE LOG"
+                    frase_tag = contenido_completo_soup.find(string=frase)
+                    tabla_despues_de_frase = None
 
-                        frase = "3.2.3 PARSEO DE ARCHIVOS DE LOG PARA MONITORIZACIÓN"
-                        frase_tag = contenido_completo_soup.find(string=frase)
-                        tabla_despues_de_frase = None
-                        if frase_tag:
-                            siguiente_elemento = frase_tag.find_next()
-                            while siguiente_elemento:
-                                if siguiente_elemento.name == 'table':
-                                    tabla_despues_de_frase = siguiente_elemento
-                                    break
-                                siguiente_elemento = siguiente_elemento.find_next()
+                    if frase_tag:
+                        siguiente_elemento = frase_tag.find_next()
+                        while siguiente_elemento:
+                            if siguiente_elemento.name == 'table':
+                                tabla_despues_de_frase = siguiente_elemento
+                                break
+                            siguiente_elemento = siguiente_elemento.find_next()
 
-                        if tabla_despues_de_frase:
-                            indice_tabla = tablas.index(tabla_despues_de_frase)
+                    if not tabla_despues_de_frase:
+                        print("No se encontró la tabla después de la frase.")
+                        return
 
-                        indice_tabla_a_actualizar = indice_tabla
-                        tabla_original = tablas[indice_tabla_a_actualizar]
-                        primer_tr_original = tabla_original.find('tr')
-                        primer_tr_copy = copy.deepcopy(primer_tr_original)
+                    indice_tabla_a_actualizar = tablas.index(tabla_despues_de_frase)
 
-                        first_tr = table.find('tr')
-                        if first_tr:
-                            first_tr.decompose()
+                    tabla_original = tablas[indice_tabla_a_actualizar]
+                    primer_tr_original = tabla_original.find('tr')
+                    primer_tr_copy = copy.deepcopy(primer_tr_original)
 
-                        df = pd.read_html(str(table))[0]         
-                        columnas_deseadas = ['Test Case ID']           
-                        df_seleccionado = df[columnas_deseadas]
-                        contador = 0
-                        fila_dict = {}
-                        for index, fila in df_seleccionado.iterrows():
-                            if pd.isnull(fila['Test Case ID']) or fila['Test Case ID'] == "":
-                                fila_dict = fila.to_dict()
-                                fila_dict['Test Case ID'] = key[contador]
-                                df.at[index, 0] = fila_dict['Test Case ID']  
-                                contador = contador + 1
+                    first_tr = tabla_original.find('tr')
+                    if first_tr:
+                        first_tr.decompose()
 
-                        data_actualizada = df.values.tolist()
+                    df = pd.read_html(str(tabla_original))[0]
+                    columnas_deseadas = [11]  # Aseguramos que estamos manipulando la columna correcta
+                    df_seleccionado = df[columnas_deseadas]
 
-                        filas = table.find_all('tr')
-                        for i, fila in enumerate(filas[1:], start=1):  
-                            celdas = fila.find_all('td')
-                            for j, celda in enumerate(celdas):
-                                if j == 12:
-                                    celda_valor = celda.get_text(strip=True)
-                                    if pd.isnull(celda_valor) or celda_valor == "":
-                                        celda.string = str(data_actualizada[i-1][j+1])
-                            
-                        tabla_html_actualizada = str(table)
-                            
-                        if indice_tabla_a_actualizar < len(tablas):
-                            tabla_html_actualizada = BeautifulSoup(tabla_html_actualizada, 'html.parser')
-                            filas_actualizadas = tabla_html_actualizada.find_all('tr')
-                            tabla_original.clear()
-                            tabla_original.append(primer_tr_copy)
-                            for fila in filas_actualizadas:
-                                tabla_original.append(fila)
-                            tablas[indice_tabla_a_actualizar].replace_with(tabla_original)
-                        html_completo_actualizado = str(contenido_completo_soup)
+                    contador = 0
+                    for index, fila in df.iterrows():
+                        # Asignamos el valor de key[contador] a la columna 11 (Test Case ID)
+                        if contador < len(key):  # Comprobamos que no excedemos el tamaño de key
+                            df.at[index, 11] = key[contador]  
+                            contador += 1
+                        if contador == len(key):
+                            break
+
+                    data_actualizada = df.values.tolist()
+                    filas = tabla_original.find_all('tr')
+
+                    # Ahora procesamos las filas de la tabla original y asignamos el TC correspondiente en cada fila
+                    contador = 0  # Reseteamos el contador aquí para que se asigne correctamente el TC a cada fila
+                    for i, fila in enumerate(filas[1:], start=1):  # Empezamos desde la segunda fila
+                        celdas = fila.find_all('td')
+                        for j, celda in enumerate(celdas):
+                            if j == 11:
+                                # Solo modificamos la columna 11 (Test Case ID)
+                                if contador < len(key):
+                                    # Crear un enlace HTML con el valor de la clave
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
+                                    celda.string = ''  # Limpiar el contenido de la celda
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertar el enlace
+                                    contador += 1
+
+                    tabla_html_actualizada = str(tabla_original)
+                    tabla_html_actualizada = BeautifulSoup(tabla_html_actualizada, 'html.parser')
+                    tabla_original.clear()
+                    tabla_original.append(primer_tr_copy)  
+                    for fila in tabla_html_actualizada.find_all('tr'):
+                        tabla_original.append(fila)
+
+                    tablas[indice_tabla_a_actualizar].replace_with(tabla_original)
+
+                    html_completo_actualizado = str(contenido_completo_soup)
 
                 elif modificar == True:
-                    indiceTabla = 12
-                    if indiceTabla < len(tablas):
-                        table = tablas[indiceTabla]
+                    frase = "3.2.3 PARSEO DE ARCHIVOS DE LOG REDIS PARA MONITORIZACIÓN"
+                    frase_tag = contenido_completo_soup.find(string=frase)
+                    tabla_despues_de_frase = None
 
-                        frase = "3.2.3 PARSEO DE ARCHIVOS DE LOG PARA MONITORIZACIÓN"
-                        frase_tag = contenido_completo_soup.find(string=frase)
-                        tabla_despues_de_frase = None
-                        if frase_tag:
-                            siguiente_elemento = frase_tag.find_next()
-                            while siguiente_elemento:
-                                if siguiente_elemento.name == 'table':
-                                    tabla_despues_de_frase = siguiente_elemento
-                                    break
-                                siguiente_elemento = siguiente_elemento.find_next()
+                    if frase_tag:
+                        siguiente_elemento = frase_tag.find_next()
+                        while siguiente_elemento:
+                            if siguiente_elemento.name == 'table':
+                                tabla_despues_de_frase = siguiente_elemento
+                                break
+                            siguiente_elemento = siguiente_elemento.find_next()
 
-                        if tabla_despues_de_frase:
-                            indice_tabla = tablas.index(tabla_despues_de_frase)
+                    if not tabla_despues_de_frase:
+                        print("No se encontró la tabla después de la frase.")
+                        return
 
-                        indice_tabla_a_actualizar = indice_tabla
-                        tabla_original = tablas[indice_tabla_a_actualizar]
-                        primer_tr_original = tabla_original.find('tr')
-                        primer_tr_copy = copy.deepcopy(primer_tr_original)
+                    indice_tabla_a_actualizar = tablas.index(tabla_despues_de_frase)
 
-                        first_tr = table.find('tr')
-                        if first_tr:
-                            first_tr.decompose()
+                    tabla_original = tablas[indice_tabla_a_actualizar]
+                    primer_tr_original = tabla_original.find('tr')
+                    primer_tr_copy = copy.deepcopy(primer_tr_original)
 
-                        df = pd.read_html(str(table))[0]         
-                        columnas_deseadas = ['Test Case ID']           
-                        df_seleccionado = df[columnas_deseadas]
-                        contador = 0
-                        fila_dict = {}
-                        for index, fila in df_seleccionado.iterrows():
-                            fila_dict = fila.to_dict()
-                            fila_dict['Test Case ID'] = key[contador]
-                            df.at[index, 0] = fila_dict['Test Case ID']  
-                            contador = contador + 1
+                    first_tr = tabla_original.find('tr')
+                    if first_tr:
+                        first_tr.decompose()
 
-                        data_actualizada = df.values.tolist()
+                    df = pd.read_html(str(tabla_original))[0]
+                    columnas_deseadas = [11]  # Aseguramos que estamos manipulando la columna correcta
+                    df_seleccionado = df[columnas_deseadas]
 
-                        filas = table.find_all('tr')
-                        for i, fila in enumerate(filas[1:], start=1):  
-                            celdas = fila.find_all('td')
-                            for j, celda in enumerate(celdas):
-                                if j == 12:
-                                    celda.string = str(data_actualizada[i-1][j+1])
-                            
-                        tabla_html_actualizada = str(table)
-                            
-                        if indice_tabla_a_actualizar < len(tablas):
-                            tabla_html_actualizada = BeautifulSoup(tabla_html_actualizada, 'html.parser')
-                            filas_actualizadas = tabla_html_actualizada.find_all('tr')
-                            tabla_original.clear()
-                            tabla_original.append(primer_tr_copy)
-                            for fila in filas_actualizadas:
-                                tabla_original.append(fila)
-                            tablas[indice_tabla_a_actualizar].replace_with(tabla_original)
-                        html_completo_actualizado = str(contenido_completo_soup)
+                    contador = 0
+                    for index, fila in df.iterrows():
+                        # Asignamos el valor de key[contador] a la columna 11 (Test Case ID)
+                        if contador < len(key):  # Comprobamos que no excedemos el tamaño de key
+                            df.at[index, 11] = key[contador]  
+                            contador += 1
+                        if contador == len(key):
+                            break
+
+                    data_actualizada = df.values.tolist()
+                    filas = tabla_original.find_all('tr')
+
+                    # Ahora procesamos las filas de la tabla original y asignamos el TC correspondiente en cada fila
+                    contador = 0  # Reseteamos el contador aquí para que se asigne correctamente el TC a cada fila
+                    for i, fila in enumerate(filas[1:], start=1):  # Empezamos desde la segunda fila
+                        celdas = fila.find_all('td')
+                        for j, celda in enumerate(celdas):
+                            if j == 11:
+                                # Solo modificamos la columna 11 (Test Case ID)
+                                if contador < len(key):
+                                    # Crear un enlace HTML con el valor de la clave
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
+                                    celda.string = ''  # Limpiar el contenido de la celda
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertar el enlace
+                                    contador += 1
+
+                    tabla_html_actualizada = str(tabla_original)
+                    tabla_html_actualizada = BeautifulSoup(tabla_html_actualizada, 'html.parser')
+                    tabla_original.clear()
+                    tabla_original.append(primer_tr_copy)  
+                    for fila in tabla_html_actualizada.find_all('tr'):
+                        tabla_original.append(fila)
+
+                    tablas[indice_tabla_a_actualizar].replace_with(tabla_original)
+
+                    html_completo_actualizado = str(contenido_completo_soup)
 
                 status = confluence.update_page(
-                        page_id=page['id'],
-                        title=title,
-                        body=html_completo_actualizado,
-                        version_comment='TC ZABBIX'
-                    )
+                    page_id=page['id'],
+                    title=title,
+                    body=html_completo_actualizado,
+                    version_comment='TC ZABBIX'
+                )
+
                 if status:
                     print('Página actualizada exitosamente')
                 else:
                     print('Error al actualizar la página')
+
+
                 
         case 'GRAFANA PLATFORM':
             space='QAVIDEO'
@@ -710,7 +997,7 @@ def modificarTesCaseId(key,monitorizacion,modificar):
             if page:
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
-                contenidoSplit = contenido.split("Referencia Grafana Plataforma QA")
+                contenidoSplit = contenido.replace("&nbsp;", "").split("Referencia Grafana Plataforma QA")
                 soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
                 table = soup.find('table')
                 df = pd.read_html(str(table))[0]  
@@ -720,7 +1007,7 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
                 tablas = contenido_completo_soup.find_all('table')
                 if modificar == False:
-                    contador = 0
+                    contador=0
                     frase = "Referencia Grafana Plataforma QA"
                     frase_tag = contenido_completo_soup.find(string=frase)
                     tabla_despues_de_frase = None
@@ -818,116 +1105,206 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                     print('Error al actualizar la página')
         
         case 'GRAFANA PROMETHEUS':
-            space='QAVIDEO'
-            title='pruebas QA'
+            space = os.getenv("space")
+            title = os.getenv("title")
             page = confluence.get_page_by_title(space, title)
+
             if page:
+                # Obtén todo el contenido de la página
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
-                contenidoSplit = contenido.split("Referencia GRAFANA PROMETHEUS QA")
-                soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
-                table = soup.find('table')
-                df = pd.read_html(str(table))[0]  
-                df = df.drop(df.index[0])
-                columnas_deseadas = ['Test Case ID']
-                df_seleccionado = df[columnas_deseadas]
-                contador = 0
+
+                # Parseamos el contenido completo con BeautifulSoup
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
-                tablas = contenido_completo_soup.find_all('table')
-                if modificar == False:
 
-                    frase = "Referencia GRAFANA PROMETHEUS QA"
-                    frase_tag = contenido_completo_soup.find(string=frase)
-                    tabla_despues_de_frase = None
-                    if frase_tag:
-                        siguiente_elemento = frase_tag.find_next()
-                        while siguiente_elemento:
-                            if siguiente_elemento.name == 'table':
-                                tabla_despues_de_frase = siguiente_elemento
-                                break
-                            siguiente_elemento = siguiente_elemento.find_next()
+                # Buscamos la referencia "Referencia GRAFANA PROMETHEUS QA" en el contenido
+                contenidoSplit = contenido.split("Referencia GRAFANA PROMETHEUS QA")
+                if len(contenidoSplit) < 2:
+                    print("No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
+                    return
 
-                    if tabla_despues_de_frase:
-                        indice_tabla = tablas.index(tabla_despues_de_frase)
+                # Trabajamos con la parte después de la referencia
+                contenido_despues_referencia = contenidoSplit[1]
+                contenido_despues_soup = BeautifulSoup(contenido_despues_referencia, 'html.parser')
 
-                    indice_tabla_a_actualizar = indice_tabla
+                # Buscamos todas las tablas en la parte después de la referencia
+                tablas = contenido_despues_soup.find_all('table')
+
+                # Tomamos la primera tabla (la que queremos modificar)
+                tabla_despues_de_frase = tablas[0]
+
+                # Convertimos la tabla en un DataFrame para manipularla
+                df = pd.read_html(str(tabla_despues_de_frase))[0]
+                df = df.drop(df.index[0])  # Eliminamos la fila de encabezados original
+                columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]  # Las columnas que nos interesan
+
+                max_index = df.shape[1] - 1
+                if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+                    columnas_deseadas_nombres = [df.columns[idx] for idx in columnas_deseadas_indices]
+                    df_seleccionado = df[columnas_deseadas_nombres]
+                    df_seleccionado.columns = columnas_deseadas_indices
+                else:
+                    print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
+                    return
+
+                # Aquí empieza la actualización de las celdas según 'modificar'
+                if not modificar:
+                    contador = 0
                     for index, fila in df_seleccionado.iterrows():
-                        if pd.isnull(fila['Test Case ID']) or fila['Test Case ID'] == "":
-                            fila_dict = fila.to_dict()
-                            fila_dict['Test Case ID'] = key[contador]
-                            df.at[index, 0] = fila_dict['Test Case ID']  
-                            contador = contador + 1
+                        fila_dict = fila.to_dict()           
+                        if pd.isnull(fila_dict[13]) or fila_dict[13] == "":
+                            if contador == len(key):
+                                break
+                            fila_dict[13] = key[contador]  # Insertamos la clave en la columna 13
+                            df.at[index, 13] = fila_dict[13]
+                            contador += 1
 
-                    data_actualizada = df.values.tolist()
-                    filas = table.find_all('tr')
+                    # Actualizamos el HTML de la tabla en el DOM de BeautifulSoup
+                    filas = tabla_despues_de_frase.find_all('tr')
                     cont = 0
+                    valorMetricAux = ""
                     for i, fila in enumerate(filas): 
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
-                            if j == 16:
+                            if j == 0:
+                                celda_valor_aux = celda.get_text(strip=True)
+                                valorMetric = celda_valor_aux.split("{")[0]
+                                if not valorMetricAux:
+                                    valorMetricAux = valorMetric
+                                else:
+                                    print("No se cambia el valor")
+                                print("RAMON")
+                                print(valorMetric + " / " + valorMetricAux)
+
+                            if j == 13:  # La columna que queremos modificar
                                 celda_valor = celda.get_text(strip=True)
                                 if pd.isnull(celda_valor) or celda_valor == "":
-                                    celda.string = key[cont]
-                                    cont = cont + 1
-                    
-                    tabla_html_actualizada = str(table)
-                    if indice_tabla_a_actualizar < len(tablas):
-                        tablas[indice_tabla_a_actualizar].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
-                    html_completo_actualizado = str(contenido_completo_soup)
-                
-                elif modificar == True:
-                    frase = "Referencia GRAFANA PROMETHEUS QA"
-                    frase_tag = contenido_completo_soup.find(string=frase)
-                    tabla_despues_de_frase = None
-                    if frase_tag:
-                        siguiente_elemento = frase_tag.find_next()
-                        while siguiente_elemento:
-                            if siguiente_elemento.name == 'table':
-                                tabla_despues_de_frase = siguiente_elemento
-                                break
-                            siguiente_elemento = siguiente_elemento.find_next()
+                                    if valorMetric != valorMetricAux:
+                                        cont += 1
+                                        valorMetricAux = valorMetric
+                                    if cont == len(key):
+                                        break
+                                    # Modificar la celda con el enlace de Jira
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                    celda.string = ''  # Limpiar el contenido de la celda
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertar el enlace
+                                    print(valorMetric + " - " + valorMetricAux)
 
-                    if tabla_despues_de_frase:
-                        indice_tabla = tablas.index(tabla_despues_de_frase)
+                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
+                    celdas_fila_13 = []
+                    for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            celdas_fila_13.append(celdas[13])
 
-                    indice_tabla_a_actualizar = indice_tabla
+                    i = 0
+                    while i < len(celdas_fila_13):
+                        valor_celda = celdas_fila_13[i].get_text(strip=True)
+                        j = i + 1
+                        while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
+                            # Si las celdas tienen el mismo valor, combinamos
+                            celdas_fila_13[j].extract()  # Eliminamos la celda repetida
+                            j += 1
+                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
+                        if j > i + 1:
+                            celdas_fila_13[i]['rowspan'] = j - i  # Combinamos las celdas
+                        i = j
+
+                    # Actualizamos el HTML de la tabla modificada
+                    tabla_html_actualizada = str(tabla_despues_de_frase)
+                    tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+
+                elif modificar:
+                    contador = 0
                     for index, fila in df_seleccionado.iterrows():
                         fila_dict = fila.to_dict()
-                        fila_dict['Test Case ID'] = key[contador]
-                        df.at[index, 0] = fila_dict['Test Case ID']  
-                        contador = contador + 1
+                        fila_dict[13] = key[contador]  # Actualizamos la columna 13 con la nueva clave
+                        df.at[index, 13] = fila_dict[13]
+                        contador += 1
 
-                    data_actualizada = df.values.tolist()
-                    filas = table.find_all('tr')
+                    filas = tabla_despues_de_frase.find_all('tr')
                     cont = 0
                     for i, fila in enumerate(filas): 
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
-                            if j == 16:
-                                celda.string = str(key[cont])
-                                cont = cont + 1
-                    
-                    tabla_html_actualizada = str(table)
-                    if indice_tabla_a_actualizar < len(tablas):
-                        tablas[indice_tabla_a_actualizar].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
-                    html_completo_actualizado = str(contenido_completo_soup)
+                            if j == 13:  
+                                # Modificar la celda con el enlace de Jira
+                                enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                celda.string = ''  # Limpiar el contenido de la celda
+                                celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertar el enlace
+                                cont += 1
 
+                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
+                    celdas_fila_13 = []
+                    for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            celdas_fila_13.append(celdas[13])
+
+                    i = 0
+                    while i < len(celdas_fila_13):
+                        valor_celda = celdas_fila_13[i].get_text(strip=True)
+                        j = i + 1
+                        while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
+                            # Si las celdas tienen el mismo valor, combinamos
+                            celdas_fila_13[j].extract()  # Eliminamos la celda repetida
+                            j += 1
+                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
+                        if j > i + 1:
+                            celdas_fila_13[i]['rowspan'] = j - i  # Combinamos las celdas
+                        i = j
+
+                    # Actualizamos el HTML de la tabla modificada
+                    tabla_html_actualizada = str(tabla_despues_de_frase)
+                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
+
+                # Busca la referencia "Referencia GRAFANA PROMETHEUS QA"
+                frase = "Referencia GRAFANA PROMETHEUS QA"
+                frase_tag = contenido_completo_soup.find(string=frase)
+
+                # Encuentra la tabla inmediatamente después de la referencia
+                tabla_despues_de_frase = None
+                if frase_tag:
+                    siguiente_elemento = frase_tag.find_next()
+                    while siguiente_elemento:
+                        if siguiente_elemento.name == 'table':
+                            tabla_despues_de_frase = siguiente_elemento
+                            break
+                        siguiente_elemento = siguiente_elemento.find_next()
+
+                if tabla_despues_de_frase:
+                    # Reemplaza la tabla encontrada con la tabla actualizada
+                    tabla_despues_de_frase.replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+                else:
+                    print("Error: No se encontró una tabla después de la referencia.")
+                    return
+
+                # Convertimos todo el contenido actualizado en HTML
+                html_completo_actualizado = str(contenido_completo_soup)
+
+                # Actualizamos la página completa en Confluence
                 status = confluence.update_page(
-                        page_id=page['id'],
-                        title=title,
-                        body=html_completo_actualizado,
-                        version_comment="TC Grafana Prometheus"
-                    )
+                    page_id=page['id'],
+                    title=title,
+                    body=html_completo_actualizado,
+                    version_comment="TC Grafana Prometheus"
+                )
+
                 if status:
                     print('Página actualizada exitosamente')
                 else:
                     print('Error al actualizar la página')
-        
+
+
         case 'KIBANA':
-            space='QAVIDEO'
-            title='pruebas QA'
+            space = os.getenv("space")
+            title = os.getenv("title")
             page = confluence.get_page_by_title(space, title)
+
             html_completo_actualizado = ""
+
             if page:
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
@@ -938,8 +1315,8 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                 cont = 0
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
                 tablas = contenido_completo_soup.find_all('table')
-                if modificar == False:
 
+                if not modificar:  # Si modificar es False
                     frase = "Referencia KIBANA QA"
                     frase_tag = contenido_completo_soup.find(string=frase)
                     tabla_despues_de_frase = None
@@ -965,8 +1342,9 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                             for index, fila in df_seleccionado.iterrows():
                                 if pd.isnull(fila['Test Case ID']) or fila['Test Case ID'] == "":
                                     fila_dict = fila.to_dict()
-                                    fila_dict['Test Case ID'] = key[contador]
-                                    df.at[index, 0] = fila_dict['Test Case ID']  
+                                    # Ahora, en lugar de solo poner el Test Case ID, ponemos un enlace a Jira
+                                    fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
+                                    df.at[index, 0] = fila_dict['Test Case ID']
                                     contador = contador + 1
 
                             data_actualizada = df.values.tolist()
@@ -974,20 +1352,24 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                             for i, fila in enumerate(filas): 
                                 celdas = fila.find_all('td')
                                 for j, celda in enumerate(celdas):
-                                    if j == 3:
+                                    if j == 3:  # Columna de "Test Case ID"
                                         celda_valor = celda.get_text(strip=True)
                                         if pd.isnull(celda_valor) or celda_valor == "":
-                                            celda.string = key[cont]
+                                            # Ahora insertamos el enlace a Jira en la celda
+                                            celda.string = ''  # Limpiamos el contenido de la celda
+                                            enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                            celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertamos el enlace
                                             cont = cont + 1
-                            
+
                             tabla_html_actualizada = str(table)
                             if indice_tabla_a_actualizar < len(tablas):
                                 tablas[indice_tabla_a_actualizar].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
-                            
-                        indice_tabla_a_actualizar = indice_tabla_a_actualizar + 1
-                    html_completo_actualizado = str(contenido_completo_soup) 
 
-                elif modificar == True:
+                        indice_tabla_a_actualizar = indice_tabla_a_actualizar + 1
+
+                    html_completo_actualizado = str(contenido_completo_soup)
+
+                elif modificar:  # Si modificar es True
                     frase = "Referencia KIBANA QA"
                     frase_tag = contenido_completo_soup.find(string=frase)
                     tabla_despues_de_frase = None
@@ -1012,8 +1394,9 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                             df_seleccionado = df[columnas_deseadas]
                             for index, fila in df_seleccionado.iterrows():
                                 fila_dict = fila.to_dict()
-                                fila_dict['Test Case ID'] = key[contador]
-                                df.at[index, 0] = fila_dict['Test Case ID']  
+                                # Ahora, en lugar de solo poner el Test Case ID, ponemos un enlace a Jira
+                                fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
+                                df.at[index, 0] = fila_dict['Test Case ID']
                                 contador = contador + 1
 
                             data_actualizada = df.values.tolist()
@@ -1021,28 +1404,37 @@ def modificarTesCaseId(key,monitorizacion,modificar):
                             for i, fila in enumerate(filas): 
                                 celdas = fila.find_all('td')
                                 for j, celda in enumerate(celdas):
-                                    if j == 3:
-                                        celda.string = str(key[cont])
+                                    if j == 3:  # Columna de "Test Case ID"
+                                        # Insertamos el enlace a Jira en la celda
+                                        enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                        celda.string = ''  # Limpiamos el contenido de la celda
+                                        celda.append(BeautifulSoup(enlace, 'html.parser'))  # Insertamos el enlace
                                         cont = cont + 1
-                            
+
                             tabla_html_actualizada = str(table)
                             if indice_tabla_a_actualizar < len(tablas):
                                 tablas[indice_tabla_a_actualizar].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
-                            
-                        indice_tabla_a_actualizar = indice_tabla_a_actualizar + 1
-                    html_completo_actualizado = str(contenido_completo_soup) 
 
+                        indice_tabla_a_actualizar = indice_tabla_a_actualizar + 1
+
+                    tabla_html_actualizada = str(tabla_despues_de_frase)
+                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+
+                    html_completo_actualizado = str(contenido_completo_soup)
+
+                # Ahora actualizamos la página con el contenido modificado
                 status = confluence.update_page(
-                                        page_id=page['id'],
-                                        title=title,
-                                        body=html_completo_actualizado,
-                                        version_comment='TC KIBANA'
-                                    )
-                            
+                    page_id=page['id'],
+                    title=title,
+                    body=html_completo_actualizado,
+                    version_comment='TC KIBANA'
+                )
+
                 if status:
                     print('Página actualizada exitosamente')
                 else:
                     print('Error al actualizar la página')
+
             
                 
 def crearTCZabbix(project,contenido,modificar,componente,label=None,fixVersion=None):
@@ -1064,33 +1456,69 @@ def crearTCKibana(project,contenido,modificar,componente,label=None,fixVersion=N
         creaJira(project,'KIBANA',listaKibana[i:i+2],modificar,componente,label,fixVersion)
     modificarTesCaseId(listaIssueKibana,'KIBANA',modificar)
 
-def main(project,monitorizacion,modificar,componente,label=None,fixVersion=None):
-    space='videotools'
-    title='Rebirth Catalog 01 - Loader (Openshift)'
+def main(project, monitorizacion, modificar, componente, label=None, fixVersion=None):
+    space = os.getenv("space")
+    title = os.getenv("title")
     page = confluence.get_page_by_title(space, title)
+    
     if page:
-        
         page2 = confluence.get_page_by_title(space, title, expand='body.storage')
         contenido = page2['body']['storage']['value']
+        monitorizacion_list = monitorizacion.split(',') if monitorizacion else []
 
-        match monitorizacion:
-            case 'ZABBIX':
-                crearTCZabbix(project,contenido,modificar,componente,label,fixVersion)
-            case 'GRAFANA PLATFORM':
-                crearTCGrafanaPlatform(project,contenido,modificar,componente,label,fixVersion)
-            case 'GRAFANA PROMETHEUS':
-                crearTCGrafanaPrometheus(project,contenido,modificar,componente,label,fixVersion)
-            case 'KIBANA':
-                crearTCKibana(project,contenido,modificar,componente,label,fixVersion)
-            case 'ALL':
-                crearTCZabbix(project,contenido,modificar,componente,label,fixVersion)
-                crearTCGrafanaPlatform(project,contenido,modificar,componente,label,fixVersion)
-                crearTCGrafanaPrometheus(project,contenido,modificar,componente,label,fixVersion)
-                crearTCKibana(project,contenido,modificar,componente,label,fixVersion)
-            case _:
-                raise ValueError(f"Monitorizacion no reconocida: {monitorizacion}")
-            
-main ("MBJIRATEST","GRAFANA PLATFORM",True,"Android")
-main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android")
-main ("USERSAPITC",'ZABBIX',False,"top.catalog.loader",None,"top.catalog.loader_1.0")
-main ("MBJIRATEST",'KIBANA',False,"Android")
+        if monitorizacion_list:
+            for monitor in monitorizacion_list:
+                match monitor.strip():
+                    case 'ZABBIX':
+                        crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+                    case 'GRAFANA PLATFORM':
+                        crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+                    case 'GRAFANA PROMETHEUS':
+                        crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+                    case 'KIBANA':
+                        crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+                    case 'ALL':
+                        crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+                        crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+                        crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+                        crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+                    case _:
+                        raise ValueError(f"Monitorizacion no reconocida: {monitor}")
+        else:
+            match monitorizacion.strip():
+                case 'ZABBIX':
+                    crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+                case 'GRAFANA PLATFORM':
+                    crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+                case 'GRAFANA PROMETHEUS':
+                    crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+                case 'KIBANA':
+                    crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+                case 'ALL':
+                    crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+                    crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+                    crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+                    crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+                case _:
+                    raise ValueError(f"Monitorizacion no reconocida: {monitorizacion}")
+
+
+#main ("USERSAPITC","GRAFANA PLATFORM",False,"top.user.extraprovision",None,None)
+#main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android",None,None)
+#main ("MBJIRATEST",'ZABBIX',False,"DATAHUB",None,None)
+
+#main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android",None,None)
+
+
+#main ("ORCHTC",'ZABBIX',False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
+#main ("MBJIRATEST","GRAFANA PLATFORM",False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
+#main ("ORCHTC","GRAFANA PROMETHEUS",False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
+#main ("ORCHTC",'KIBANA',False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
+
+#main ("MBJIRATEST",'ZABBIX',False,"Android",None,None)
+#main ("MBJIRATEST","GRAFANA PLATFORM",False,"Android",None,None)
+#main ("MBJIRATEST",'KIBANA',False,"Android",None,None)
+
+
+print (os.getenv("project")+" - "+os.getenv("monitorizacion")+" - "+str(type(modificarEnv))+" - "+os.getenv("componente")+" - "+os.getenv("label")+" - "+os.getenv("fixVersion"))
+main (os.getenv("project"),os.getenv("monitorizacion"),modificarEnv,os.getenv("componente"),labelEnv,fixVersionEnv)

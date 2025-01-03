@@ -76,6 +76,6 @@
         "Resolution": "Unresolved",
         "FixVersion": "None",
         "DataSet": "||level||log example||\n|CRITICAL|{noformat}{noformat}|\n|INFO|{noformat}{noformat}\n|DETAIL|{noformat}{noformat}|\n|ERROR|{noformat}{noformat}|\n|WARNING|{noformat}{noformat}|",
-        "ExpectedResult": "*GIVEN* the log in Pre-requisites with traces as in Dataset\n*WHEN* reviewing such traces in Kibana using {*}functionName == '{*}{*}FUNCTIONNAME{*}{*}'{*}\n*THEN* the fields in log match with the field in Kibana as: \n||*Update*||*Release*||*Field*||*Name*||*Type*||*Description*||*Required in Kibana*||*Example*||CONTENT||"
+        "ExpectedResult": "*GIVEN* the log in Pre-requisites with traces as in Dataset\n*WHEN* reviewing such traces in Kibana using {*}functionName == '{*}{*}FUNCTIONNAME{*}{*}'{*}\n*THEN* the fields in log match with the field in Kibana as: \nTITULOSCONTENT||"
     }
 }
