@@ -288,8 +288,7 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
             df_seleccionado = df[columnas_deseadas_nombres]
             df_seleccionado.columns = columnas_deseadas_indices
         else:
-            print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
-                    max_index}.")
+            print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
 
         df_seleccionado = df[columnas_deseadas]
 
