@@ -1,4 +1,4 @@
-atlassian
+atlassian-python-api
 beautifulsoup4
 pandas
 jira
