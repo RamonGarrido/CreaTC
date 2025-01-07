@@ -1164,8 +1164,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f"<strong>{
-                                    data_actualizada[i-1][j]}</strong>"
+                                nuevo_contenido = f"<strong>{data_actualizada[i-1][j]}</strong>"
                                 celda.string = ''
                                 celda.append(BeautifulSoup(
                                     nuevo_contenido, 'html.parser'))
@@ -1211,11 +1210,9 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f"<strong>{
-                                    data_actualizada[i-1][j]}</strong>"
+                                nuevo_contenido = f"<strong>{data_actualizada[i-1][j]}</strong>"
                                 celda.string = ''
-                                celda.append(BeautifulSoup(
-                                    nuevo_contenido, 'html.parser'))
+                                celda.append(BeautifulSoup(nuevo_contenido, 'html.parser'))
 
                     tabla_html_actualizada = str(table)
                     tabla_html_actualizada = tabla_html_actualizada.replace('nan', 'N/A')
@@ -1243,26 +1240,21 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
             if page:
                 # Obtén todo el contenido de la página
-                page2 = confluence.get_page_by_title(
-                    space, title, expand='body.storage')
+                page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
 
                 # Parseamos el contenido completo con BeautifulSoup
-                contenido_completo_soup = BeautifulSoup(
-                    contenido, 'html.parser')
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
 
                 # Buscamos la referencia "Referencia GRAFANA PROMETHEUS QA" en el contenido
-                contenidoSplit = contenido.split(
-                    "Referencia GRAFANA PROMETHEUS QA")
+                contenidoSplit = contenido.split("Referencia GRAFANA PROMETHEUS QA")
                 if len(contenidoSplit) < 2:
-                    print(
-                        "No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
+                    print("No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
                     return
 
                 # Trabajamos con la parte después de la referencia
                 contenido_despues_referencia = contenidoSplit[1]
-                contenido_despues_soup = BeautifulSoup(
-                    contenido_despues_referencia, 'html.parser')
+                contenido_despues_soup = BeautifulSoup(contenido_despues_referencia, 'html.parser')
 
                 # Buscamos todas las tablas en la parte después de la referencia
                 tablas = contenido_despues_soup.find_all('table')
@@ -1284,8 +1276,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     df_seleccionado = df[columnas_deseadas_nombres]
                     df_seleccionado.columns = columnas_deseadas_indices
                 else:
-                    print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
-                          max_index}.")
+                    print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
                     return
 
                 # Aquí empieza la actualización de las celdas según 'modificar'
@@ -1327,12 +1318,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                     if cont == len(key):
                                         break
                                     # Modificar la celda con el enlace de Jira
-                                    enlace = f'<a href="https://jira.tid.es/browse/{
-                                        key[cont]}">{key[cont]}</a>'
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
                                     celda.string = ''  # Limpiar el contenido de la celda
                                     # Insertar el enlace
-                                    celda.append(BeautifulSoup(
-                                        enlace, 'html.parser'))
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))
                                     print(valorMetric + " - " + valorMetricAux)
 
                     # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
@@ -1359,8 +1348,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
                     # Actualizamos el HTML de la tabla modificada
                     tabla_html_actualizada = str(tabla_despues_de_frase)
-                    tablas[0].replace_with(BeautifulSoup(
-                        tabla_html_actualizada, 'html.parser'))
+                    tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
                 elif modificar:
                     contador = 0
@@ -1378,12 +1366,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j == 13:
                                 # Modificar la celda con el enlace de Jira
-                                enlace = f'<a href="https://jira.tid.es/browse/{
-                                    key[cont]}">{key[cont]}</a>'
+                                enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
                                 celda.string = ''  # Limpiar el contenido de la celda
                                 # Insertar el enlace
-                                celda.append(BeautifulSoup(
-                                    enlace, 'html.parser'))
+                                celda.append(BeautifulSoup(enlace, 'html.parser'))
                                 cont += 1
 
                     # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
@@ -1410,11 +1396,9 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
                     # Actualizamos el HTML de la tabla modificada
                     tabla_html_actualizada = str(tabla_despues_de_frase)
-                    tablas[1].replace_with(BeautifulSoup(
-                        tabla_html_actualizada, 'html.parser'))
+                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
-                contenido_completo_soup = BeautifulSoup(
-                    contenido, 'html.parser')
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
 
                 # Busca la referencia "Referencia GRAFANA PROMETHEUS QA"
                 frase = "Referencia GRAFANA PROMETHEUS QA"
@@ -1432,8 +1416,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
                 if tabla_despues_de_frase:
                     # Reemplaza la tabla encontrada con la tabla actualizada
-                    tabla_despues_de_frase.replace_with(
-                        BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+                    tabla_despues_de_frase.replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
                 else:
                     print("Error: No se encontró una tabla después de la referencia.")
                     return
@@ -1462,16 +1445,14 @@ def modificarTesCaseId(key, monitorizacion, modificar):
             html_completo_actualizado = ""
 
             if page:
-                page2 = confluence.get_page_by_title(
-                    space, title, expand='body.storage')
+                page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
                 contenidoSplit = contenido.split("Referencia KIBANA QA")
                 soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
                 table = soup.findAll('table')
                 contador = 0
                 cont = 0
-                contenido_completo_soup = BeautifulSoup(
-                    contenido, 'html.parser')
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
                 tablas = contenido_completo_soup.find_all('table')
 
                 if not modificar:  # Si modificar es False
@@ -1502,8 +1483,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 if pd.isnull(fila['Test Case ID']) or fila['Test Case ID'] == "":
                                     fila_dict = fila.to_dict()
                                     # Ahora, en lugar de solo poner el Test Case ID, ponemos un enlace a Jira
-                                    fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{
-                                        key[contador]}">{key[contador]}</a>'
+                                    fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
                                     df.at[index, 0] = fila_dict['Test Case ID']
                                     contador = contador + 1
 
@@ -1513,16 +1493,13 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 celdas = fila.find_all('td')
                                 for j, celda in enumerate(celdas):
                                     if j == 3:  # Columna de "Test Case ID"
-                                        celda_valor = celda.get_text(
-                                            strip=True)
+                                        celda_valor = celda.get_text(strip=True)
                                         if pd.isnull(celda_valor) or celda_valor == "":
                                             # Ahora insertamos el enlace a Jira en la celda
                                             celda.string = ''  # Limpiamos el contenido de la celda
-                                            enlace = f'<a href="https://jira.tid.es/browse/{
-                                                key[cont]}">{key[cont]}</a>'
+                                            enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
                                             # Insertamos el enlace
-                                            celda.append(BeautifulSoup(
-                                                enlace, 'html.parser'))
+                                            celda.append(BeautifulSoup(enlace, 'html.parser'))
                                             cont = cont + 1
 
                             tabla_html_actualizada = str(table)
@@ -1561,8 +1538,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                             for index, fila in df_seleccionado.iterrows():
                                 fila_dict = fila.to_dict()
                                 # Ahora, en lugar de solo poner el Test Case ID, ponemos un enlace a Jira
-                                fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{
-                                    key[contador]}">{key[contador]}</a>'
+                                fila_dict['Test Case ID'] = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
                                 df.at[index, 0] = fila_dict['Test Case ID']
                                 contador = contador + 1
 
@@ -1573,12 +1549,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 for j, celda in enumerate(celdas):
                                     if j == 3:  # Columna de "Test Case ID"
                                         # Insertamos el enlace a Jira en la celda
-                                        enlace = f'<a href="https://jira.tid.es/browse/{
-                                            key[cont]}">{key[cont]}</a>'
+                                        enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
                                         celda.string = ''  # Limpiamos el contenido de la celda
                                         # Insertamos el enlace
-                                        celda.append(BeautifulSoup(
-                                            enlace, 'html.parser'))
+                                        celda.append(BeautifulSoup(enlace, 'html.parser'))
                                         cont = cont + 1
 
                             tabla_html_actualizada = str(table)
@@ -1589,8 +1563,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         indice_tabla_a_actualizar = indice_tabla_a_actualizar + 1
 
                     tabla_html_actualizada = str(tabla_despues_de_frase)
-                    tablas[1].replace_with(BeautifulSoup(
-                        tabla_html_actualizada, 'html.parser'))
+                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
                     html_completo_actualizado = str(contenido_completo_soup)
 
