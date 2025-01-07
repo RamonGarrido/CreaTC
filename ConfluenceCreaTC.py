@@ -160,6 +160,7 @@ listaIssueKibana = []
 
 def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
     if monitorizacion == 'ZABBIX':
+        print ("ENTRA EN ZABBIX")
         listaZabbix = []
         contenidoSplit = contenido.split(referencia)
         html_completo = f"<table>{contenidoSplit[1]}</table>"
@@ -221,6 +222,7 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         return listaZabbix
 
     elif monitorizacion == 'GRAFANA PLATFORM':
+        print ("ENTRA EN GRAFANA PLATAFORMA")
         listaGrafana = []
         contenidoSplit = contenido.split(
             "Referencia Grafana Plataforma QA")
@@ -263,6 +265,7 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         return listaGrafana
 
     elif monitorizacion == 'GRAFANA PROMETHEUS':
+        print ("ENTRA EN GRAFANA PROMETHEUS")
         listaGrafana = []
 
         contenidoSplit = contenido.split(referencia)
@@ -310,6 +313,7 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         return listaGrafana
 
     elif monitorizacion == 'KIBANA':
+        print ("ENTRA EN KIBANA")
         listaKibana = []
         contenidoSplit = contenido.split(referencia)
         soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
