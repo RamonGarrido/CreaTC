@@ -1631,7 +1631,7 @@ def main(project, modificar, componente, label=None, fixVersion=None):
 
         # Leer los parámetros booleanos de Jenkins
         zabbix = os.getenv("ZABBIX", "false").lower() == "true"
-        grafana_platform = os.getenv("GRAFANA PLATFORM", "false").lower() == "true"
+        grafana_platform = os.getenv("GRAFANA PLATAFORMA", "false").lower() == "true"
         grafana_prometheus = os.getenv("GRAFANA PROMETHEUS", "false").lower() == "true"
         kibana = os.getenv("KIBANA", "false").lower() == "true"
         
