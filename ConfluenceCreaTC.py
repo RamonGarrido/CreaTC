@@ -123,13 +123,6 @@ fixVersion = os.getenv("FixVersion")
 labelEnv = label if label and label.lower() != "none" else None
 fixVersionEnv = fixVersion if fixVersion and fixVersion.lower() != "none" else None
 
-# Ejemplo de salida para depuración (puedes eliminar esto más adelante)
-print(f"Space: {space}")
-print(f"Title: {title}")
-print(f"Modificar: {modificarEnv}")
-print(f"Label: {labelEnv}")
-print(f"Fix Version: {fixVersionEnv}")
-
 """
 nombre_claves_ZABBIX = {
     3: "patternToSearch",
@@ -166,7 +159,6 @@ listaIssueKibana = []
 
 def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
     if monitorizacion == 'ZABBIX':
-        print ("ENTRA EN ZABBIX")
         listaZabbix = []
         contenidoSplit = contenido.split(referencia)
         html_completo = f"<table>{contenidoSplit[1]}</table>"
@@ -223,11 +215,9 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
                 listaZabbix.append(nuevo_data)
         if (listaZabbix[0]['Test Case ID'] == 'Test Case ID'):
             ultimoElemento = listaZabbix.pop(0)
-        print(listaZabbix)
         return listaZabbix
 
     elif monitorizacion == 'GRAFANA PLATFORM':
-        print ("ENTRA EN GRAFANA PLATAFORMA")
         listaGrafana = []
         contenidoSplit = contenido.split(
             "Referencia Grafana Plataforma QA")
@@ -251,7 +241,6 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
                         "Test Case ID": fila_dict[7]
                     }
                     listaGrafana.append(nuevo_data)
-                    print(nuevo_data)
         elif modificar == True:
             for index, fila in df_seleccionado.iterrows():
                 fila_dict = fila.to_dict()
@@ -270,7 +259,6 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         return listaGrafana
 
     elif monitorizacion == 'GRAFANA PROMETHEUS':
-        print ("ENTRA EN GRAFANA PROMETHEUS")
         listaGrafana = []
 
         contenidoSplit = contenido.split(referencia)
@@ -317,7 +305,6 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         return listaGrafana
 
     elif monitorizacion == 'KIBANA':
-        print ("ENTRA EN KIBANA")
         listaKibana = []
         contenidoSplit = contenido.split(referencia)
         soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
@@ -625,7 +612,6 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     listaIssueZabbix.append(str(jiraIssue.issueKey))
 
             elif modificar == False:
-                print("AQUI LLEGA")
                 if 'Test Case ID' in dato:
                     key = dato['Test Case ID']
                     ticket_existente = buscar_ticket_existente_por_key(
@@ -1170,7 +1156,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f"<strong>{data_actualizada[i-1][j]}</strong>"
+                                nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
                                 celda.string = ''
                                 celda.append(BeautifulSoup(
                                     nuevo_contenido, 'html.parser'))
@@ -1216,7 +1202,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f"<strong>{data_actualizada[i-1][j]}</strong>"
+                                nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
                                 celda.string = ''
                                 celda.append(BeautifulSoup(nuevo_contenido, 'html.parser'))
 
@@ -1312,8 +1298,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                     valorMetricAux = valorMetric
                                 else:
                                     print("No se cambia el valor")
-                                print("RAMON")
-                                print(valorMetric + " / " + valorMetricAux)
 
                             if j == 13:  # La columna que queremos modificar
                                 celda_valor = celda.get_text(strip=True)
@@ -1328,7 +1312,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                     celda.string = ''  # Limpiar el contenido de la celda
                                     # Insertar el enlace
                                     celda.append(BeautifulSoup(enlace, 'html.parser'))
-                                    print(valorMetric + " - " + valorMetricAux)
 
                     # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
                     celdas_fila_13 = []
@@ -1634,11 +1617,6 @@ def main(project, modificar, componente, label=None, fixVersion=None):
         grafana_platform = os.getenv("GRAFANA PLATAFORMA", "false").lower() == "true"
         grafana_prometheus = os.getenv("GRAFANA PROMETHEUS", "false").lower() == "true"
         kibana = os.getenv("KIBANA", "false").lower() == "true"
-        
-        print(f"zabbix: {zabbix}")
-        print(f"grafana_platform: {grafana_platform}")
-        print(f"grafana_prometheus: {grafana_prometheus}")
-        print(f"kibana: {kibana}")
 
         # Lógica para crear TC según los parámetros activados
         if zabbix:
