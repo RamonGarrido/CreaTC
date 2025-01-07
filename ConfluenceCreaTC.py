@@ -604,24 +604,33 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     print(f'Ticket {ticket_existente.key} actualizado.')
                     print(jiraIssue.summary)
                     print(jiraIssue.issueKey)
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
                     listaIssueZabbix.append(ticket_existente)
                     if linked_ticket_zabbix:
-                        linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
-                        # Usa .key para obtener el key del ticket
-                        jira.create_issue_link('is tested by', jiraIssue.key, linked_ticket.key)
-                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
+                        try:
+                            # Verifica que linked_ticket_zabbix tenga el formato adecuado (ID del ticket)
+                            linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtener el ticket relacionado
+                            print(f"Enlazando ticket {issue.key} con {linked_ticket.key}.")
+
+                            # Crea el enlace entre los tickets
+                            jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                            print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+
+                        except Exception as e:
+                            print(f"Error al intentar enlazar los tickets: {e}")
                 else:
                     jiraIssue.issueKey = jira.create_issue(
                         fields=createIssueDict(jiraIssue))
                     print(f'Ticket {jiraIssue.issueKey} creado.')
                     print(jiraIssue.summary)
                     print(jiraIssue.issueKey)
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
                     listaIssueZabbix.append(str(jiraIssue.issueKey))
                     if linked_ticket_zabbix:
                         linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
                         # Usa .key para obtener el key del ticket
-                        jira.create_issue_link('is tested by', jiraIssue.key, linked_ticket.key)
-                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
+                        jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
 
             elif modificar == False:
                 if 'Test Case ID' in dato:
@@ -630,30 +639,39 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                         jira, key)
                     if ticket_existente:
                         print("TC EXISTENTE: "+str(key))
+                        # Si el ticket ya existe, solo lo enlazamos si es necesario.
+                        if linked_ticket_zabbix:
+                            try:
+                                # Verifica que linked_ticket_zabbix tenga el formato adecuado (ID del ticket)
+                                linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtener el ticket relacionado
+                                print(f"Enlazando ticket {ticket_existente.key} con {linked_ticket.key}.")
+
+                                # Crea el enlace entre los tickets
+                                jira.create_issue_link('is tested by', ticket_existente.key, linked_ticket.key)
+                                print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}")
+
+                            except Exception as e:
+                                print(f"Error al intentar enlazar los tickets: {e}")
                     else:
                         print(jiraIssue.summary)
-                        jiraIssue.issueKey = jira.create_issue(
-                            fields=createIssueDict(jiraIssue))
-                        listaIssueZabbix.append(str(jiraIssue.issueKey))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.issueKey)
+                        # Solo creamos el ticket una vez
+                        issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
+                        listaIssueZabbix.append(str(issue.key))  # Usamos issue.key aquí
+                        print(f'Ticket {issue.key} creado.')
+                        print(issue.key)
+
                         if linked_ticket_zabbix:
-                            linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
-                            # Usa .key para obtener el key del ticket
-                            jira.create_issue_link('is tested by', jiraIssue.key, linked_ticket.key)
-                            print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
-                else:
-                    print(jiraIssue.summary)
-                    jiraIssue.issueKey = jira.create_issue(
-                        fields=createIssueDict(jiraIssue))
-                    listaIssueZabbix.append(str(jiraIssue.issueKey))
-                    print(f'Ticket {jiraIssue.issueKey} creado.')
-                    print(jiraIssue.issueKey)
-                    if linked_ticket_zabbix:
-                        linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
-                        # Usa .key para obtener el key del ticket
-                        jira.create_issue_link('is tested by', jiraIssue.key, linked_ticket.key)
-                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
+                            try:
+                                # Verifica que linked_ticket_zabbix tenga el formato adecuado (ID del ticket)
+                                linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtener el ticket relacionado
+                                print(f"Enlazando ticket {issue.key} con {linked_ticket.key}.")
+
+                                # Crea el enlace entre los tickets
+                                jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                                print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+
+                            except Exception as e:
+                                print(f"Error al intentar enlazar los tickets: {e}")
 
         modificarTesCaseId(listaIssueZabbix, 'ZABBIX', modificar)
 
