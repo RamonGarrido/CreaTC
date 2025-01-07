@@ -1156,7 +1156,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
+                                if data_actualizada[i-1][j] in key:
+                                    nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
+                                else:
+                                    nuevo_contenido = f'<strong>{data_actualizada[i-1][j]}</strong>'
                                 celda.string = ''
                                 celda.append(BeautifulSoup(
                                     nuevo_contenido, 'html.parser'))
@@ -1202,7 +1205,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
                                 # celda.string = str(data_actualizada[i-1][j])
-                                nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
+                                if data_actualizada[i-1][j] in key:
+                                    nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
+                                else:
+                                    nuevo_contenido = f'<strong>{data_actualizada[i-1][j]}</strong>'
                                 celda.string = ''
                                 celda.append(BeautifulSoup(nuevo_contenido, 'html.parser'))
 
