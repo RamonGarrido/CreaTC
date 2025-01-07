@@ -606,8 +606,10 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     print(jiraIssue.issueKey)
                     listaIssueZabbix.append(ticket_existente)
                     if linked_ticket_zabbix:
-                        ticket_existente.add_link(type='Tested By', issue=linked_ticket_zabbix)
-                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket_zabbix}")
+                        linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
+                        jiraIssue = jira.issue(jiraIssue.issueKey)  # Obtenemos el ticket recién creado
+                        jiraIssue.add_link(type='Tested By', issue=linked_ticket)
+                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
                 else:
                     jiraIssue.issueKey = jira.create_issue(
                         fields=createIssueDict(jiraIssue))
@@ -616,8 +618,10 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     print(jiraIssue.issueKey)
                     listaIssueZabbix.append(str(jiraIssue.issueKey))
                     if linked_ticket_zabbix:
-                        ticket_existente.add_link(type='Tested By', issue=linked_ticket_zabbix)
-                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket_zabbix}")
+                        linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
+                        jiraIssue = jira.issue(jiraIssue.issueKey)  # Obtenemos el ticket recién creado
+                        jiraIssue.add_link(type='Tested By', issue=linked_ticket)
+                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
 
             elif modificar == False:
                 if 'Test Case ID' in dato:
@@ -634,8 +638,10 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                         print(f'Ticket {jiraIssue.issueKey} creado.')
                         print(jiraIssue.issueKey)
                         if linked_ticket_zabbix:
-                            ticket_existente.add_link(type='Tested By', issue=linked_ticket_zabbix)
-                            print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket_zabbix}")
+                            linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
+                            jiraIssue = jira.issue(jiraIssue.issueKey)  # Obtenemos el ticket recién creado
+                            jiraIssue.add_link(type='Tested By', issue=linked_ticket)
+                            print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
                 else:
                     print(jiraIssue.summary)
                     jiraIssue.issueKey = jira.create_issue(
@@ -644,8 +650,10 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     print(f'Ticket {jiraIssue.issueKey} creado.')
                     print(jiraIssue.issueKey)
                     if linked_ticket_zabbix:
-                        ticket_existente.add_link(type='Tested By', issue=linked_ticket_zabbix)
-                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket_zabbix}")
+                        linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
+                        jiraIssue = jira.issue(jiraIssue.issueKey)  # Obtenemos el ticket recién creado
+                        jiraIssue.add_link(type='Tested By', issue=linked_ticket)
+                        print(f"Ticket {jiraIssue.key} enlazado con {linked_ticket.key}")
 
         modificarTesCaseId(listaIssueZabbix, 'ZABBIX', modificar)
 
