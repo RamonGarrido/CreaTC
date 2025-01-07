@@ -104,25 +104,33 @@ confluence = Confluence(
 # space='VIDEOTOOLS'
 # title='labels-consumer'
 
-dotenv_path = os.path.join("configs", "variables.env")
-load_dotenv(dotenv_path=dotenv_path)
+import os
 
+# Variables definidas directamente en Jenkins como parámetros
 componentName = "top.enablers.cwf_db"
-space = os.getenv("space")
-title = os.getenv("title")
 
-modificarEnv = os.getenv("modificar")
+# Obtiene los valores de las variables de entorno desde Jenkins
+space = os.getenv("Space")
+title = os.getenv("Title")
+
+# Manejo de la variable modificarEnv como un booleano
+modificarEnv = os.getenv("Modificar")
 if modificarEnv is not None:
     modificarEnv = modificarEnv.lower() == "true"
 
-label = os.getenv("label")
-fixVersion = os.getenv("fixVersion")
+label = os.getenv("Label")
+fixVersion = os.getenv("FixVersion")
 
-if label == "None" or label == "":
-    labelEnv = None
+# Validación de label y fixVersion
+labelEnv = label if label and label.lower() != "none" else None
+fixVersionEnv = fixVersion if fixVersion and fixVersion.lower() != "none" else None
 
-if fixVersion == "None" or fixVersion == "":
-    fixVersionEnv = None
+# Ejemplo de salida para depuración (puedes eliminar esto más adelante)
+print(f"Space: {space}")
+print(f"Title: {title}")
+print(f"Modificar: {modificarEnv}")
+print(f"Label: {labelEnv}")
+print(f"Fix Version: {fixVersionEnv}")
 
 """
 nombre_claves_ZABBIX = {
@@ -1613,67 +1621,44 @@ def crearTCKibana(project, contenido, modificar, componente, label=None, fixVers
     modificarTesCaseId(listaIssueKibana, 'KIBANA', modificar)
 
 
-def main(project, monitorizacion, modificar, componente, label=None, fixVersion=None):
-    space = os.getenv("space")
-    title = os.getenv("title")
+def main(project, modificar, componente, label=None, fixVersion=None):
+    space = os.getenv("Space")
+    title = os.getenv("Title")
     page = confluence.get_page_by_title(space, title)
 
     if page:
         page2 = confluence.get_page_by_title(
             space, title, expand='body.storage')
         contenido = page2['body']['storage']['value']
-        monitorizacion_list = monitorizacion.split(
-            ',') if monitorizacion else []
 
-        if monitorizacion_list:
-            for monitor in monitorizacion_list:
-                    if monitor.strip() == 'ZABBIX':
-                        crearTCZabbix(project, contenido, modificar,
-                                      componente, label, fixVersion)
-                    elif monitor.strip() == 'GRAFANA PLATFORM':
-                        crearTCGrafanaPlatform(
-                            project, contenido, modificar, componente, label, fixVersion)
-                    elif monitor.strip() == 'GRAFANA PROMETHEUS':
-                        crearTCGrafanaPrometheus(
-                            project, contenido, modificar, componente, label, fixVersion)
-                    elif monitor.strip() == 'KIBANA':
-                        crearTCKibana(project, contenido, modificar,
-                                      componente, label, fixVersion)
-                    elif monitor.strip() == 'ALL':
-                        crearTCZabbix(project, contenido, modificar,
-                                      componente, label, fixVersion)
-                        crearTCGrafanaPlatform(
-                            project, contenido, modificar, componente, label, fixVersion)
-                        crearTCGrafanaPrometheus(
-                            project, contenido, modificar, componente, label, fixVersion)
-                        crearTCKibana(project, contenido, modificar,
-                                      componente, label, fixVersion)
-                    else:
-                        raise ValueError(f"Monitorizacion no reconocida: {monitor}")
-        else:
-                if monitorizacion.strip() == 'ZABBIX':
-                    crearTCZabbix(project, contenido, modificar,
-                                  componente, label, fixVersion)
-                elif monitorizacion.strip() == 'GRAFANA PLATFORM':
-                    crearTCGrafanaPlatform(
-                        project, contenido, modificar, componente, label, fixVersion)
-                elif monitorizacion.strip() == 'GRAFANA PROMETHEUS':
-                    crearTCGrafanaPrometheus(
-                        project, contenido, modificar, componente, label, fixVersion)
-                elif monitorizacion.strip() == 'KIBANA':
-                    crearTCKibana(project, contenido, modificar,
-                                  componente, label, fixVersion)
-                elif monitorizacion.strip() == 'ALL':
-                    crearTCZabbix(project, contenido, modificar,
-                                  componente, label, fixVersion)
-                    crearTCGrafanaPlatform(
-                        project, contenido, modificar, componente, label, fixVersion)
-                    crearTCGrafanaPrometheus(
-                        project, contenido, modificar, componente, label, fixVersion)
-                    crearTCKibana(project, contenido, modificar,
-                                  componente, label, fixVersion)
-                else:
-                    raise ValueError(f"Monitorizacion no reconocida: {monitorizacion}")
+        # Leer los parámetros booleanos de Jenkins
+        zabbix = os.getenv("ZABBIX", "false").lower() == "true"
+        grafana_platform = os.getenv("GRAFANA_PLATFORM", "false").lower() == "true"
+        grafana_prometheus = os.getenv("GRAFANA_PROMETHEUS", "false").lower() == "true"
+        kibana = os.getenv("KIBANA", "false").lower() == "true"
+
+        # Lógica para crear TC según los parámetros activados
+        if zabbix:
+            crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+
+        if grafana_platform:
+            crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+
+        if grafana_prometheus:
+            crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+
+        if kibana:
+            crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+
+        # Caso especial: Si todos están activados, considerar 'ALL'
+        if zabbix and grafana_platform and grafana_prometheus and kibana:
+            crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
+            crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
+            crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
+            crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
+
+    else:
+        raise ValueError("No se encontró la página en Confluence. Verifica los parámetros space y title.")
 
 
 # main ("USERSAPITC","GRAFANA PLATFORM",False,"top.user.extraprovision",None,None)
@@ -1693,7 +1678,7 @@ def main(project, monitorizacion, modificar, componente, label=None, fixVersion=
 # main ("MBJIRATEST",'KIBANA',False,"Android",None,None)
 
 
-print(os.getenv("project")+" - "+os.getenv("monitorizacion")+" - "+str(type(modificarEnv)) +
+print(os.getenv("Project")+" - "+os.getenv("monitorizacion")+" - "+str(type(modificarEnv)) +
       " - "+os.getenv("componente")+" - "+os.getenv("label")+" - "+os.getenv("fixVersion"))
-main(os.getenv("project"), os.getenv("monitorizacion"),
-     modificarEnv, os.getenv("componente"), labelEnv, fixVersionEnv)
+
+main(os.getenv("Project"),modificarEnv, os.getenv("Componente"), labelEnv, fixVersionEnv)
