@@ -159,169 +159,169 @@ listaIssueKibana = []
 
 
 def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
-        if monitorizacion ==  'ZABBIX':
-            listaZabbix = []
-            contenidoSplit = contenido.split(referencia)
-            html_completo = f"<table>{contenidoSplit[1]}</table>"
-            soup = BeautifulSoup(html_completo, 'html.parser')
-            table = soup.find('table')
-            df = pd.read_html(str(table))[0]
-            # columnas_deseadas = ['PATTERN TO SEARCH','SEVERITY','ALARM NAME','ALARM TEXT','CONDITION','ACTION','Test Case ID']
-            # columnas_deseadas_indices = [3,4,5,6,7,8,12]
-            columnas_deseadas_indices = [2, 3, 4, 5, 6, 7, 11]
-            # df_seleccionado = df[columnas_deseadas]
-            max_index = df.shape[1] - 1
-            if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
-                columnas_deseadas_nombres = [df.columns[idx]
-                                             for idx in columnas_deseadas_indices]
-                df_seleccionado = df[columnas_deseadas_nombres]
-                df_seleccionado.columns = columnas_deseadas_indices
-            else:
-                print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
-                      max_index}.")
+    if monitorizacion == 'ZABBIX':
+        listaZabbix = []
+        contenidoSplit = contenido.split(referencia)
+        html_completo = f"<table>{contenidoSplit[1]}</table>"
+        soup = BeautifulSoup(html_completo, 'html.parser')
+        table = soup.find('table')
+        df = pd.read_html(str(table))[0]
+        # columnas_deseadas = ['PATTERN TO SEARCH','SEVERITY','ALARM NAME','ALARM TEXT','CONDITION','ACTION','Test Case ID']
+        # columnas_deseadas_indices = [3,4,5,6,7,8,12]
+        columnas_deseadas_indices = [2, 3, 4, 5, 6, 7, 11]
+        # df_seleccionado = df[columnas_deseadas]
+        max_index = df.shape[1] - 1
+        if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+            columnas_deseadas_nombres = [df.columns[idx]
+                                            for idx in columnas_deseadas_indices]
+            df_seleccionado = df[columnas_deseadas_nombres]
+            df_seleccionado.columns = columnas_deseadas_indices
+        else:
+            print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
+                    max_index}.")
 
-            if modificar == False:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
-                    if 'Recuperación' in str(fila_dict[6]):
-                        condition = str(fila_dict[6]).split('Recuperación')
-                        fila_dict[6] = {}
-                        fila_dict[6]['alarm'] = condition[0]
-                        fila_dict[6]['recovery'] = condition[1]
+        if modificar == False:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+                if 'Recuperación' in str(fila_dict[6]):
+                    condition = str(fila_dict[6]).split('Recuperación')
+                    fila_dict[6] = {}
+                    fila_dict[6]['alarm'] = condition[0]
+                    fila_dict[6]['recovery'] = condition[1]
 
+                nuevo_data = {
+                    nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items()}
+                # nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
+                # if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
+                #    nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
+                listaZabbix.append(nuevo_data)
+
+        elif modificar == True:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+                if 'Recuperación' in str(fila_dict[6]):
+                    condition = str(fila_dict[6]).split('Recuperación')
+                    fila_dict[6] = {}
+                    fila_dict[6]['alarm'] = condition[0]
+                    fila_dict[6]['recovery'] = condition[1]
+
+                if pd.isna(fila_dict[11]):
+                    fila_dict[11] = " "
+
+                nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items(
+                ) if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
+
+                if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
+                    nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
+
+                listaZabbix.append(nuevo_data)
+        if (listaZabbix[0]['Test Case ID'] == 'Test Case ID'):
+            ultimoElemento = listaZabbix.pop(0)
+        print(listaZabbix)
+        return listaZabbix
+
+    elif monitorizacion == 'GRAFANA PLATFORM':
+        listaGrafana = []
+        contenidoSplit = contenido.split(
+            "Referencia Grafana Plataforma QA")
+        soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
+        table = soup.find('table')
+        df = pd.read_html(str(table))[0]
+        df = df.drop(df.index[0])
+        columnas_deseadas = [2, 4, 5, 6, 7]
+        df_seleccionado = df[columnas_deseadas]
+
+        if modificar == False:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+
+                if not pd.isnull(fila_dict[2]):
                     nuevo_data = {
-                        nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items()}
-                    # nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
-                    # if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
-                    #    nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
-                    listaZabbix.append(nuevo_data)
+                        "Metric": fila_dict[2],
+                        "DB en Influx": fila_dict[4],
+                        "Medida": fila_dict[5],
+                        "Metrica": fila_dict[6],
+                        "Test Case ID": fila_dict[7]
+                    }
+                    listaGrafana.append(nuevo_data)
+                    print(nuevo_data)
+        elif modificar == True:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+                if not pd.isnull(fila_dict[2]) and not pd.isnull(fila_dict[4]) and not pd.isnull(fila_dict[5]) and not pd.isnull(fila_dict[6]):
+                    if pd.isna(fila_dict[7]):
+                        fila_dict[7] = " "
+                    nuevo_data = {
+                        "Metric": fila_dict[2],
+                        "DB en Influx": fila_dict[4],
+                        "Medida": fila_dict[5],
+                        "Metrica": fila_dict[6],
+                        "Test Case ID": fila_dict[7]
+                    }
+                    listaGrafana.append(nuevo_data)
+        primerElemento = listaGrafana.pop(0)
+        return listaGrafana
 
-            elif modificar == True:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
-                    if 'Recuperación' in str(fila_dict[6]):
-                        condition = str(fila_dict[6]).split('Recuperación')
-                        fila_dict[6] = {}
-                        fila_dict[6]['alarm'] = condition[0]
-                        fila_dict[6]['recovery'] = condition[1]
+    elif monitorizacion == 'GRAFANA PROMETHEUS':
+        listaGrafana = []
 
-                    if pd.isna(fila_dict[11]):
-                        fila_dict[11] = " "
+        contenidoSplit = contenido.split(referencia)
 
-                    nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items(
-                    ) if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
+        html_con_saltos = contenidoSplit[1].replace('<p>', '<p><br>')
+        soup = BeautifulSoup(html_con_saltos, 'html.parser')
 
-                    if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
-                        nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
+        tablas = soup.find_all('table')
 
-                    listaZabbix.append(nuevo_data)
-            if (listaZabbix[0]['Test Case ID'] == 'Test Case ID'):
-                ultimoElemento = listaZabbix.pop(0)
-            print(listaZabbix)
-            return listaZabbix
+        table = tablas[0]
+        df = pd.read_html(str(table))[0]
 
-        elif monitorizacion == 'GRAFANA PLATFORM':
-            listaGrafana = []
-            contenidoSplit = contenido.split(
-                "Referencia Grafana Plataforma QA")
-            soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
-            table = soup.find('table')
-            df = pd.read_html(str(table))[0]
-            df = df.drop(df.index[0])
-            columnas_deseadas = [2, 4, 5, 6, 7]
-            df_seleccionado = df[columnas_deseadas]
+        columnas_deseadas = [
+            'Metric', 'Type', 'DB En Influx', 'Medida', 'Métrica', 'Test Case ID']
+        columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
 
-            if modificar == False:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
+        max_index = df.shape[1] - 1
+        if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+            columnas_deseadas_nombres = [df.columns[idx]
+                                            for idx in columnas_deseadas_indices]
+            df_seleccionado = df[columnas_deseadas_nombres]
+            df_seleccionado.columns = columnas_deseadas_indices
+        else:
+            print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
+                    max_index}.")
 
-                    if not pd.isnull(fila_dict[2]):
-                        nuevo_data = {
-                            "Metric": fila_dict[2],
-                            "DB en Influx": fila_dict[4],
-                            "Medida": fila_dict[5],
-                            "Metrica": fila_dict[6],
-                            "Test Case ID": fila_dict[7]
-                        }
-                        listaGrafana.append(nuevo_data)
-                        print(nuevo_data)
-            elif modificar == True:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
-                    if not pd.isnull(fila_dict[2]) and not pd.isnull(fila_dict[4]) and not pd.isnull(fila_dict[5]) and not pd.isnull(fila_dict[6]):
-                        if pd.isna(fila_dict[7]):
-                            fila_dict[7] = " "
-                        nuevo_data = {
-                            "Metric": fila_dict[2],
-                            "DB en Influx": fila_dict[4],
-                            "Medida": fila_dict[5],
-                            "Metrica": fila_dict[6],
-                            "Test Case ID": fila_dict[7]
-                        }
-                        listaGrafana.append(nuevo_data)
-            primerElemento = listaGrafana.pop(0)
-            return listaGrafana
+        df_seleccionado = df[columnas_deseadas]
 
-        elif monitorizacion == 'GRAFANA PROMETHEUS':
-            listaGrafana = []
-
-            contenidoSplit = contenido.split(referencia)
-
-            html_con_saltos = contenidoSplit[1].replace('<p>', '<p><br>')
-            soup = BeautifulSoup(html_con_saltos, 'html.parser')
-
-            tablas = soup.find_all('table')
-
-            table = tablas[0]
-            df = pd.read_html(str(table))[0]
-
-            columnas_deseadas = [
-                'Metric', 'Type', 'DB En Influx', 'Medida', 'Métrica', 'Test Case ID']
-            columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
-
-            max_index = df.shape[1] - 1
-            if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
-                columnas_deseadas_nombres = [df.columns[idx]
-                                             for idx in columnas_deseadas_indices]
-                df_seleccionado = df[columnas_deseadas_nombres]
-                df_seleccionado.columns = columnas_deseadas_indices
-            else:
-                print(f"Algunos índices están fuera del rango. El rango válido es 0 a {
-                      max_index}.")
-
-            df_seleccionado = df[columnas_deseadas]
-
-            if modificar == False:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
-                    if pd.isnull(fila_dict['Test Case ID']):
-                        if not pd.isnull(fila_dict['Métrica']):
-                            fila_dict['Métrica'] = fila_dict['Métrica'].replace(
-                                ' ', '\n')
-                        listaGrafana.append(fila_dict)
-
-            elif modificar == True:
-                for index, fila in df_seleccionado.iterrows():
-                    fila_dict = fila.to_dict()
-                    fila_dict['Métrica'] = fila_dict['Métrica'].replace(
-                        ' ', '\n')
+        if modificar == False:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+                if pd.isnull(fila_dict['Test Case ID']):
+                    if not pd.isnull(fila_dict['Métrica']):
+                        fila_dict['Métrica'] = fila_dict['Métrica'].replace(
+                            ' ', '\n')
                     listaGrafana.append(fila_dict)
 
-            return listaGrafana
+        elif modificar == True:
+            for index, fila in df_seleccionado.iterrows():
+                fila_dict = fila.to_dict()
+                fila_dict['Métrica'] = fila_dict['Métrica'].replace(
+                    ' ', '\n')
+                listaGrafana.append(fila_dict)
 
-        elif monitorizacion == 'KIBANA':
-            listaKibana = []
-            contenidoSplit = contenido.split(referencia)
-            soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
-            table = soup.find_all('table')
-            tablas = pd.read_html(str(table))
-            if len(tablas) % 2 != 0:
-                raise AssertionError(
-                    f"El numero de tablas es impar: {len(tablas)}")
+        return listaGrafana
 
-            for i in range(0, len(tablas)):
-                listaKibana.append(tablas[i].to_dict(orient='records'))
-            return listaKibana
+    elif monitorizacion == 'KIBANA':
+        listaKibana = []
+        contenidoSplit = contenido.split(referencia)
+        soup = BeautifulSoup(contenidoSplit[1], 'html.parser')
+        table = soup.find_all('table')
+        tablas = pd.read_html(str(table))
+        if len(tablas) % 2 != 0:
+            raise AssertionError(
+                f"El numero de tablas es impar: {len(tablas)}")
+
+        for i in range(0, len(tablas)):
+            listaKibana.append(tablas[i].to_dict(orient='records'))
+        return listaKibana
 
 
 def escribirJson(nombreF, contenido):
