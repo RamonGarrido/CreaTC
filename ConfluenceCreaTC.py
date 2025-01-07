@@ -1649,8 +1649,7 @@ def main(project, monitorizacion, modificar, componente, label=None, fixVersion=
                         crearTCKibana(project, contenido, modificar,
                                       componente, label, fixVersion)
                     else:
-                        raise ValueError(
-                            f"Monitorizacion no reconocida: {monitor}")
+                        raise ValueError(f"Monitorizacion no reconocida: {monitor}")
         else:
                 if monitorizacion.strip() == 'ZABBIX':
                     crearTCZabbix(project, contenido, modificar,
@@ -1674,8 +1673,7 @@ def main(project, monitorizacion, modificar, componente, label=None, fixVersion=
                     crearTCKibana(project, contenido, modificar,
                                   componente, label, fixVersion)
                 else:
-                    raise ValueError(f"Monitorizacion no reconocida: {
-                                     monitorizacion}")
+                    raise ValueError(f"Monitorizacion no reconocida: {monitorizacion}")
 
 
 # main ("USERSAPITC","GRAFANA PLATFORM",False,"top.user.extraprovision",None,None)
