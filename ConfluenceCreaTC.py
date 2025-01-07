@@ -1634,6 +1634,11 @@ def main(project, modificar, componente, label=None, fixVersion=None):
         grafana_platform = os.getenv("GRAFANA_PLATFORM", "false").lower() == "true"
         grafana_prometheus = os.getenv("GRAFANA_PROMETHEUS", "false").lower() == "true"
         kibana = os.getenv("KIBANA", "false").lower() == "true"
+        
+        print(f"zabbix: {zabbix}")
+        print(f"grafana_platform: {grafana_platform}")
+        print(f"grafana_prometheus: {grafana_prometheus}")
+        print(f"kibana: {kibana}")
 
         # Lógica para crear TC según los parámetros activados
         if zabbix:
