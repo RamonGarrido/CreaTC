@@ -1675,8 +1675,4 @@ def main(project, modificar, componente, label=None, fixVersion=None):
 # main ("MBJIRATEST","GRAFANA PLATFORM",False,"Android",None,None)
 # main ("MBJIRATEST",'KIBANA',False,"Android",None,None)
 
-
-print(os.getenv("Project")+" - "+os.getenv("monitorizacion")+" - "+str(type(modificarEnv)) +
-      " - "+os.getenv("componente")+" - "+os.getenv("label")+" - "+os.getenv("fixVersion"))
-
 main(os.getenv("Project"),modificarEnv, os.getenv("Componente"), labelEnv, fixVersionEnv)
