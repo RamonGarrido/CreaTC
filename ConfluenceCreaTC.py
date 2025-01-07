@@ -1007,12 +1007,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 # Solo modificamos la columna 11 (Test Case ID)
                                 if contador < len(key):
                                     # Crear un enlace HTML con el valor de la clave
-                                    enlace = f'<a href="https://jira.tid.es/browse/{
-                                        key[contador]}">{key[contador]}</a>'
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[contador]}">{key[contador]}</a>'
                                     celda.string = ''  # Limpiar el contenido de la celda
                                     # Insertar el enlace
-                                    celda.append(BeautifulSoup(
-                                        enlace, 'html.parser'))
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))
                                     contador += 1
 
                     tabla_html_actualizada = str(tabla_original)
