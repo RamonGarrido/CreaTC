@@ -104,8 +104,6 @@ confluence = Confluence(
 # space='VIDEOTOOLS'
 # title='labels-consumer'
 
-import os
-
 # Variables definidas directamente en Jenkins como parámetros
 componentName = "top.enablers.cwf_db"
 
