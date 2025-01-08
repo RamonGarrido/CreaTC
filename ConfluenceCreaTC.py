@@ -6,6 +6,7 @@ from jira import JIRA
 import copy
 from dotenv import load_dotenv
 import os
+import argparse
 
 
 class JiraIssue:
@@ -104,24 +105,52 @@ confluence = Confluence(
 # space='VIDEOTOOLS'
 # title='labels-consumer'
 
-# Variables definidas directamente en Jenkins como parámetros
-componentName = "top.enablers.cwf_db"
 
-# Obtiene los valores de las variables de entorno desde Jenkins
-space = os.getenv("Space")
-title = os.getenv("Title")
+def getParameters() :
+    parameters = {}
+    space = os.getenv("Space")
+    title = os.getenv("Title")
+    project = os.getenv("Project")
+    component = os.getenv("Componente")
+    
+    modificarEnv = os.getenv("Modificar")
+    if modificarEnv is not None:
+        modificarEnv = modificarEnv.lower() == "true"
 
-# Manejo de la variable modificarEnv como un booleano
-modificarEnv = os.getenv("Modificar")
-if modificarEnv is not None:
-    modificarEnv = modificarEnv.lower() == "true"
+    label = os.getenv("Label")
+    fixVersion = os.getenv("FixVersion")
 
-label = os.getenv("Label")
-fixVersion = os.getenv("FixVersion")
-
-# Validación de label y fixVersion
-labelEnv = label if label and label.lower() != "none" else None
-fixVersionEnv = fixVersion if fixVersion and fixVersion.lower() != "none" else None
+    labelEnv = label if label and label.lower() != "none" else None
+    fixVersionEnv = fixVersion if fixVersion and fixVersion.lower() != "none" else None
+    
+    zabbix = os.getenv("ZABBIX", "false").lower() == "true"
+    grafana_platform = os.getenv("GRAFANA PLATAFORMA", "false").lower() == "true"
+    grafana_prometheus = os.getenv("GRAFANA PROMETHEUS", "false").lower() == "true"
+    kibana = os.getenv("KIBANA", "false").lower() == "true"
+    
+    linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
+    #linked_ticket_graf_plat = os.getenv("Grafana Platform Is Tested By")
+    #linked_ticket_graf_prom = os.getenv("Grafana Prometheus Is Tested By")
+    #linked_ticket_kibana = os.getenv("Kibana Is Tested By")
+    
+    parameters = {"space" : space}
+    parameters.update({"title" : title})
+    parameters.update({"project" : project})
+    parameters.update({"component" : component})
+    parameters.update({"modify": modificarEnv})
+    parameters.update({"label":labelEnv})
+    parameters.update({"fixVersion":fixVersionEnv})
+    parameters.update({"zabbix":zabbix})
+    parameters.update({"grafana_platform":grafana_platform})
+    parameters.update({"grafana_prometheus":grafana_prometheus})
+    parameters.update({"kibana":kibana})
+    parameters.update({"linked_ticket_zabbix":linked_ticket_zabbix})
+    #parameters.update({"linked_ticket_graf_plat":linked_ticket_graf_plat})
+    #parameters.update({"linked_ticket_graf_prom":linked_ticket_graf_prom})
+    #parameters.update({"linked_ticket_kibana":linked_ticket_kibana})
+    
+    return parameters
+    
 
 """
 nombre_claves_ZABBIX = {
@@ -1647,7 +1676,7 @@ def crearTCKibana(project, contenido, modificar, componente, label=None, fixVers
                  listaKibana[i:i+2], modificar, componente, label, fixVersion)
     modificarTesCaseId(listaIssueKibana, 'KIBANA', modificar)
 
-
+"""
 def main(project, modificar, componente, label=None, fixVersion=None):
     space = os.getenv("Space")
     title = os.getenv("Title")
@@ -1658,13 +1687,11 @@ def main(project, modificar, componente, label=None, fixVersion=None):
             space, title, expand='body.storage')
         contenido = page2['body']['storage']['value']
 
-        # Leer los parámetros booleanos de Jenkins
         zabbix = os.getenv("ZABBIX", "false").lower() == "true"
         grafana_platform = os.getenv("GRAFANA PLATAFORMA", "false").lower() == "true"
         grafana_prometheus = os.getenv("GRAFANA PROMETHEUS", "false").lower() == "true"
         kibana = os.getenv("KIBANA", "false").lower() == "true"
 
-        # Lógica para crear TC según los parámetros activados
         if zabbix:
             crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
 
@@ -1677,7 +1704,6 @@ def main(project, modificar, componente, label=None, fixVersion=None):
         if kibana:
             crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
 
-        # Caso especial: Si todos están activados, considerar 'ALL'
         if zabbix and grafana_platform and grafana_prometheus and kibana:
             crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
             crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
@@ -1686,7 +1712,7 @@ def main(project, modificar, componente, label=None, fixVersion=None):
 
     else:
         raise ValueError("No se encontró la página en Confluence. Verifica los parámetros space y title.")
-
+"""
 
 # main ("USERSAPITC","GRAFANA PLATFORM",False,"top.user.extraprovision",None,None)
 # main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android",None,None)
@@ -1704,4 +1730,31 @@ def main(project, modificar, componente, label=None, fixVersion=None):
 # main ("MBJIRATEST","GRAFANA PLATFORM",False,"Android",None,None)
 # main ("MBJIRATEST",'KIBANA',False,"Android",None,None)
 
-main(os.getenv("Project"),modificarEnv, os.getenv("Componente"), labelEnv, fixVersionEnv)
+#main(os.getenv("Project"),modificarEnv, os.getenv("Componente"), labelEnv, fixVersionEnv)
+
+if __name__ == '__main__':
+    jenkinsParameters = getParameters()
+    
+    page = confluence.get_page_by_title(jenkinsParameters["space"], jenkinsParameters["title"])
+
+    if page:
+        page2 = confluence.get_page_by_title(jenkinsParameters["space"], jenkinsParameters["title"], expand='body.storage')
+        contenido = page2['body']['storage']['value']
+
+        if jenkinsParameters["zabbix"]:
+            crearTCZabbix(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+
+        elif jenkinsParameters["grafana_platform"]:
+            crearTCGrafanaPlatform(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+
+        elif jenkinsParameters["grafana_prometheus"]:
+            crearTCGrafanaPrometheus(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+
+        elif jenkinsParameters["kibana"]:
+            crearTCKibana(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+        
+        else:
+            print ("no se ha creado ningún TC")
+    
+    else:
+        raise ValueError("No se encontró la página en Confluence. Verifica los parámetros space y title.")
