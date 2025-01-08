@@ -521,7 +521,7 @@ def actualizarDatosFijos(monitorizacion, datosConf, datosFijos, componente, fn=N
             datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace(
                 'MEDIDA', medida)
             datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace(
-                'POD', componentName)
+                'POD', componente)
             datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace(
                 'METRICA', metrica)
 
