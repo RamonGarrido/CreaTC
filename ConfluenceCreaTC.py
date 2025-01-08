@@ -555,7 +555,7 @@ def actualizarDatosFijos(monitorizacion, datosConf, datosFijos, componente, fn=N
 
             # Reemplazar 'METRIC' con 'componentName'
             datosFijos[monitorizacion]['DataSet'] = datosFijos[monitorizacion]['DataSet'].replace(
-                'METRIC', componentName)
+                'METRIC', componente)
 
             # Reemplazar 'Métrica' solo si 'metrica' está presente
             if metrica:
