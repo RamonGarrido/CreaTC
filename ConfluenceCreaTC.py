@@ -1731,17 +1731,14 @@ if __name__ == '__main__':
         if jenkinsParameters["zabbix"]:
             crearTCZabbix(jenkinsParameters, contenido)
 
-        elif jenkinsParameters["grafana_platform"]:
+        if jenkinsParameters["grafana_platform"]:
             crearTCGrafanaPlatform(jenkinsParameters, contenido)
 
-        elif jenkinsParameters["grafana_prometheus"]:
+        if jenkinsParameters["grafana_prometheus"]:
             crearTCGrafanaPrometheus(jenkinsParameters, contenido)
 
-        elif jenkinsParameters["kibana"]:
+        if jenkinsParameters["kibana"]:
             crearTCKibana(jenkinsParameters, contenido)
-        
-        else:
-            print ("no se ha creado ningún TC")
     
     else:
         raise ValueError("No se encontró la página en Confluence. Verifica los parámetros space y title.")
