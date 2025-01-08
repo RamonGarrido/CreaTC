@@ -589,8 +589,7 @@ def buscar_ticket_existente_por_key(jira, key):
 # monitorizacion(str): tipo de monitorización
 # datoConfluence(lista): Datos obtenidos de Confluence (obtenerTextoConf)
 
-
-def creaJira(project, monitorizacion, datosConfluence, modificar, componente, label=None, fixVersion=None):
+def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
     options = {'server': 'https://jira.tid.es/'}
     userJira = 'qasupport'
     passJIRA = 'temporal'
@@ -601,10 +600,10 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
         for dato in datosConfluence:
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, dato, datosFijos, componente)
+                monitorizacion, dato, datosFijos, jenkinsParameters["component"])
 
-            if fixVersion is not None:
-                fixVersionSplit = fixVersion.split(",")
+            if jenkinsParameters["fixVersion"] is not None:
+                fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
                 fixVersionFinal = []
                 for fv in fixVersionSplit:
                     temporal = {'name': fv}
@@ -612,17 +611,18 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
             else:
                 fixVersionFinal = None
 
-            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, dato, componente), label, componente, datosFijos[monitorizacion]['TestType'],
+            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, dato, jenkinsParameters["component"]), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
                                     datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
                                         'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
                                     datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
                                         'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
                                     "", datosFijos[monitorizacion]['PreRequisites'], datosFijos[monitorizacion]['DataSet'],
-                                    datosFijos[monitorizacion]['Procedure'], datosFijos[monitorizacion]['ExpectedResult'], project, fixVersionFinal)
+                                    datosFijos[monitorizacion]['Procedure'], datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
 
-            linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
+            #linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
+            linked_ticket_zabbix = jenkinsParameters["linked_ticket_zabbix"]
             
-            if modificar == True:
+            if jenkinsParameters["modify"] == True:
                 key = dato['Test Case ID']
                 ticket_existente = buscar_ticket_existente_por_key(
                     jira, key)
@@ -661,7 +661,7 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                         jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
                         print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
 
-            elif modificar == False:
+            elif jenkinsParameters["modify"] == False:
                 if 'Test Case ID' in dato:
                     key = dato['Test Case ID']
                     ticket_existente = buscar_ticket_existente_por_key(
@@ -702,17 +702,17 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                             except Exception as e:
                                 print(f"Error al intentar enlazar los tickets: {e}")
 
-        modificarTesCaseId(listaIssueZabbix, 'ZABBIX', modificar)
+        modificarTesCaseId(listaIssueZabbix, 'ZABBIX', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PLATFORM':
         listaIssueGrafanaPlatform = []
         for dato in datosConfluence:
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, dato, datosFijos, componente)
+                monitorizacion, dato, datosFijos, jenkinsParameters["component"])
 
-            if fixVersion is not None:
-                fixVersionSplit = fixVersion.split(",")
+            if jenkinsParameters["fixVersion"] is not None:
+                fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
                 fixVersionFinal = []
                 for fv in fixVersionSplit:
                     temporal = {'name': fv}
@@ -720,16 +720,16 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
             else:
                 fixVersionFinal = None
 
-            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, dato, componente), label, componente, datosFijos[monitorizacion]['TestType'],
+            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, dato, jenkinsParameters["component"]), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
                                     datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
                                         'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
                                     datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
                                         'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
                                     datosFijos[monitorizacion]['Description'], datosFijos[monitorizacion][
                                         'PreRequisites'], datosFijos[monitorizacion]['DataSet'],
-                                    "", "", project, fixVersionFinal)
+                                    "", "", jenkinsParameters["project"], fixVersionFinal)
 
-            if modificar == True:
+            if jenkinsParameters["modify"] == True:
                 key = dato['Test Case ID']
                 ticket_existente = buscar_ticket_existente_por_key(
                     jira, key)
@@ -750,7 +750,7 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     listaIssueGrafanaPlatform.append(
                         str(jiraIssue.issueKey))
 
-            elif modificar == False:
+            elif jenkinsParameters["modify"] == False:
                 key = dato['Test Case ID']
                 ticket_existente = buscar_ticket_existente_por_key(
                     jira, key)
@@ -765,7 +765,7 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                     print(jiraIssue.issueKey)
 
         modificarTesCaseId(listaIssueGrafanaPlatform,
-                            'GRAFANA PLATFORM', modificar)
+                            'GRAFANA PLATFORM', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PROMETHEUS':
         listaIssueGrafanaPrometheus = []
@@ -790,7 +790,7 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
         for metric_name, params in metrics_dict.items():
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, {"Metric": metric_name}, datosFijos, componente)
+                monitorizacion, {"Metric": metric_name}, datosFijos, jenkinsParameters["component"])
             dataset_content = datosFijos[monitorizacion]['DataSet']
 
             new_table = "\n\n\n|| Metric ||\n"
@@ -799,8 +799,8 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
 
             dataset_content += "\n" + new_table
 
-            if fixVersion is not None:
-                fixVersionSplit = fixVersion.split(",")
+            if jenkinsParameters["fixVersion"] is not None:
+                fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
                 fixVersionFinal = [{'name': fv} for fv in fixVersionSplit]
             else:
                 fixVersionFinal = None
@@ -808,8 +808,8 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
             jiraIssue = JiraIssue(
                 "", "Test Case", "",
                 createSummary(monitorizacion, datosFijos, {
-                                "Metric": metric_name}, componente),
-                label, componente,
+                                "Metric": metric_name}, jenkinsParameters["component"]),
+                jenkinsParameters["label"], jenkinsParameters["component"],
                 datosFijos[monitorizacion]['TestType'],
                 datosFijos[monitorizacion]['TestScope'],
                 datosFijos[monitorizacion]['ExecutionMode'],
@@ -820,11 +820,11 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                 datosFijos[monitorizacion]['Description'],
                 datosFijos[monitorizacion]['PreRequisites'],
                 dataset_content,
-                "", "", project, fixVersionFinal
+                "", "", jenkinsParameters["project"], fixVersionFinal
             )
 
             if metric_name not in created_tickets:
-                if modificar:
+                if jenkinsParameters["modify"]:
                     key = dato['Test Case ID']
                     ticket_existente = buscar_ticket_existente_por_key(
                         jira, key)
@@ -863,11 +863,11 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                         print(jiraIssue.issueKey)
 
         modificarTesCaseId(listaIssueGrafanaPrometheus,
-                               'GRAFANA PROMETHEUS', modificar)
+                               'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
 
     elif monitorizacion == 'KIBANA':
-        if fixVersion is not None:
-            fixVersionSplit = fixVersion.split(",")
+        if jenkinsParameters["fixVersion"] is not None:
+            fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
             fixVersionFinal = []
             for fv in fixVersionSplit:
                 temporal = {'name': fv}
@@ -879,17 +879,17 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
             for dato in datosConfluence[0]:
                 datosFijos = cargarJson('datosFijos.json')
                 datosFijos = actualizarDatosFijos(
-                    monitorizacion, datosConfluence, datosFijos, componente, dato['functionName'])
+                    monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], dato['functionName'])
 
-                jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, componente, dato['functionName']), label, componente, datosFijos[monitorizacion]['TestType'],
+                jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], dato['functionName']), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
                                         datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
                                             'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
                                         datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
                                             'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
                                         "", "", datosFijos[monitorizacion]['DataSet'],
-                                        "", datosFijos[monitorizacion]['ExpectedResult'], project, fixVersionFinal)
+                                        "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
 
-                if modificar == True:
+                if jenkinsParameters["modify"] == True:
                     key = dato['Test Case ID']
                     ticket_existente = buscar_ticket_existente_por_key(
                         jira, key)
@@ -909,7 +909,7 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
                         print(jiraIssue.summary)
                         print(jiraIssue.issueKey)
                         listaIssueKibana.append(str(jiraIssue.issueKey))
-                elif modificar == False:
+                elif jenkinsParameters["modify"] == False:
                     key = dato['Test Case ID']
                     ticket_existente = buscar_ticket_existente_por_key(
                         jira, key)
@@ -926,17 +926,17 @@ def creaJira(project, monitorizacion, datosConfluence, modificar, componente, la
         else:
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, datosConfluence, datosFijos, componente, datosConfluence[0][0]['functionName'])
+                monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], datosConfluence[0][0]['functionName'])
 
-            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, componente, datosConfluence[0][0]['functionName']), label, componente, datosFijos[monitorizacion]['TestType'],
+            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], datosConfluence[0][0]['functionName']), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
                                     datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
                                         'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
                                     datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
                                         'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
                                     "", "", datosFijos[monitorizacion]['DataSet'],
-                                    "", datosFijos[monitorizacion]['ExpectedResult'], project, fixVersionFinal)
+                                    "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
 
-            if modificar == True:
+            if jenkinsParameters["modify"] == True:
                 key = datosConfluence[0][0]['Test Case ID']
                 ticket_existente = buscar_ticket_existente_por_key(
                     jira, key)
@@ -998,10 +998,9 @@ def actualizarConfluence(titulo, page, htmlActualizado, comentario):
 
 
 def modificarTesCaseId(key, monitorizacion, modificar):
-
-        if monitorizacion == 'ZABBIX':
-            space = os.getenv("space")
-            title = os.getenv("title")
+        space = jenkinsParameters["space"]
+        title = jenkinsParameters["title"]
+        if monitorizacion == 'ZABBIX':      
             page = confluence.get_page_by_title(space, title)
 
             if page:
@@ -1176,8 +1175,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print('Error al actualizar la página')
 
         elif monitorizacion == 'GRAFANA PLATFORM':
-            space = 'QAVIDEO'
-            title = 'pruebas QA'
             page = confluence.get_page_by_title(space, title)
             if page:
                 page2 = confluence.get_page_by_title(
@@ -1301,8 +1298,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print('Error al actualizar la página')
 
         elif monitorizacion == 'GRAFANA PROMETHEUS':
-            space = os.getenv("space")
-            title = os.getenv("title")
             page = confluence.get_page_by_title(space, title)
 
             if page:
@@ -1502,8 +1497,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print('Error al actualizar la página')
 
         elif monitorizacion == 'KIBANA':
-            space = os.getenv("space")
-            title = os.getenv("title")
             page = confluence.get_page_by_title(space, title)
 
             html_completo_actualizado = ""
@@ -1645,36 +1638,30 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print('Error al actualizar la página')
 
 
-def crearTCZabbix(project, contenido, modificar, componente, label=None, fixVersion=None):
-    listaZabbix = obtenerTextoConf(
-        'ZABBIX', contenido, 'Referencia ZABBIX QA', modificar)
-    creaJira(project, 'ZABBIX', listaZabbix,
-             modificar, componente, label, fixVersion)
+def crearTCZabbix(jenkinsParameters, contenido):
+    listaZabbix = obtenerTextoConf('ZABBIX', contenido, 'Referencia ZABBIX QA', jenkinsParameters["modify"])
+    creaJira(jenkinsParameters, 'ZABBIX', listaZabbix)
 
 
-def crearTCGrafanaPlatform(project, contenido, modificar, componente, label=None, fixVersion=None):
-    listaGrafanaPlatform = obtenerTextoConf(
-        'GRAFANA PLATFORM', contenido, 'Referencia Grafana Plataforma QA', modificar)
-    creaJira(project, 'GRAFANA PLATFORM', listaGrafanaPlatform,
-             modificar, componente, label, fixVersion)
+def crearTCGrafanaPlatform(jenkinsParameters, contenido):
+    listaGrafanaPlatform = obtenerTextoConf('GRAFANA PLATFORM', contenido, 'Referencia Grafana Plataforma QA', jenkinsParameters["modify"])
+    creaJira(jenkinsParameters, 'GRAFANA PLATFORM', listaGrafanaPlatform)
 
 
-def crearTCGrafanaPrometheus(project, contenido, modificar, componente, label=None, fixVersion=None):
+def crearTCGrafanaPrometheus(jenkinsParameters, contenido):
     listaGraganaPrometheus = obtenerTextoConf(
-        'GRAFANA PROMETHEUS', contenido, 'Referencia GRAFANA PROMETHEUS QA', modificar)
-    creaJira(project, 'GRAFANA PROMETHEUS', listaGraganaPrometheus,
-             modificar, componente, label, fixVersion)
+        'GRAFANA PROMETHEUS', contenido, 'Referencia GRAFANA PROMETHEUS QA', jenkinsParameters["modify"])
+    creaJira(jenkinsParameters, 'GRAFANA PROMETHEUS', listaGraganaPrometheus)
 
 # Es necesario un número par de tablas para crear correctamente el TC
 
 
-def crearTCKibana(project, contenido, modificar, componente, label=None, fixVersion=None):
+def crearTCKibana(jenkinsParameters, contenido):
     listaKibana = obtenerTextoConf(
-        'KIBANA', contenido, 'Referencia KIBANA QA', modificar)
+        'KIBANA', contenido, 'Referencia KIBANA QA', jenkinsParameters["modify"])
     for i in range(0, len(listaKibana), 2):
-        creaJira(project, 'KIBANA',
-                 listaKibana[i:i+2], modificar, componente, label, fixVersion)
-    modificarTesCaseId(listaIssueKibana, 'KIBANA', modificar)
+        creaJira(jenkinsParameters, 'KIBANA',listaKibana[i:i+2])
+    modificarTesCaseId(listaIssueKibana, 'KIBANA', jenkinsParameters["modify"])
 
 """
 def main(project, modificar, componente, label=None, fixVersion=None):
@@ -1742,16 +1729,16 @@ if __name__ == '__main__':
         contenido = page2['body']['storage']['value']
 
         if jenkinsParameters["zabbix"]:
-            crearTCZabbix(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+            crearTCZabbix(jenkinsParameters, contenido)
 
         elif jenkinsParameters["grafana_platform"]:
-            crearTCGrafanaPlatform(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+            crearTCGrafanaPlatform(jenkinsParameters, contenido)
 
         elif jenkinsParameters["grafana_prometheus"]:
-            crearTCGrafanaPrometheus(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+            crearTCGrafanaPrometheus(jenkinsParameters, contenido)
 
         elif jenkinsParameters["kibana"]:
-            crearTCKibana(jenkinsParameters["project"], contenido, jenkinsParameters["modify"], jenkinsParameters["component"], jenkinsParameters["label"], jenkinsParameters["fixVersion"])
+            crearTCKibana(jenkinsParameters, contenido)
         
         else:
             print ("no se ha creado ningún TC")
