@@ -176,7 +176,6 @@ nombre_claves_ZABBIX = {
 
 
 listaIssueKibana = []
-muestraKibana = True
 
 # Obtiene información de confluence correspondiente a la monitorización
 # Parametros:
@@ -868,9 +867,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
 
     elif monitorizacion == 'KIBANA':
-        if muestraKibana == True:
-            print ("\n** KIBANA **\n\n")
-            muestraKibana = False
+        print ("\n** KIBANA **\n\n")
         if jenkinsParameters["fixVersion"] is not None:
             fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
             fixVersionFinal = []
