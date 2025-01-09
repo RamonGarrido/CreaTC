@@ -129,7 +129,7 @@ def getParameters() :
     kibana = os.getenv("KIBANA", "false").lower() == "true"
     
     linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
-    #linked_ticket_graf_plat = os.getenv("Grafana Platform Is Tested By")
+    linked_ticket_graf_plat = os.getenv("Grafana Platform Is Tested By")
     #linked_ticket_graf_prom = os.getenv("Grafana Prometheus Is Tested By")
     #linked_ticket_kibana = os.getenv("Kibana Is Tested By")
     
@@ -145,7 +145,7 @@ def getParameters() :
     parameters.update({"grafana_prometheus":grafana_prometheus})
     parameters.update({"kibana":kibana})
     parameters.update({"linked_ticket_zabbix":linked_ticket_zabbix})
-    #parameters.update({"linked_ticket_graf_plat":linked_ticket_graf_plat})
+    parameters.update({"linked_ticket_graf_plat":linked_ticket_graf_plat})
     #parameters.update({"linked_ticket_graf_prom":linked_ticket_graf_prom})
     #parameters.update({"linked_ticket_kibana":linked_ticket_kibana})
     
@@ -621,6 +621,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
 
             #linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
             linked_ticket_zabbix = jenkinsParameters["linked_ticket_zabbix"]
+            linked_ticket_graf_plat = jenkinsParameters["linked_ticket_graf_plat"]
             
             if jenkinsParameters["modify"] == True:
                 key = dato['Test Case ID']
@@ -668,14 +669,11 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                         jira, key)
                     if ticket_existente:
                         print("TC EXISTENTE: "+str(key))
-                        # Si el ticket ya existe, solo lo enlazamos si es necesario.
                         if linked_ticket_zabbix:
                             try:
-                                # Verifica que linked_ticket_zabbix tenga el formato adecuado (ID del ticket)
                                 linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtener el ticket relacionado
                                 print(f"Enlazando ticket {ticket_existente.key} con {linked_ticket.key}.")
 
-                                # Crea el enlace entre los tickets
                                 jira.create_issue_link('is tested by', ticket_existente.key, linked_ticket.key)
                                 print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}")
 
@@ -1366,8 +1364,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 valorMetric = celda_valor_aux.split("{")[0]
                                 if not valorMetricAux:
                                     valorMetricAux = valorMetric
-                                else:
-                                    print("No se cambia el valor")
 
                             if j == 13:  # La columna que queremos modificar
                                 celda_valor = celda.get_text(strip=True)
@@ -1649,9 +1645,9 @@ def crearTCGrafanaPlatform(jenkinsParameters, contenido):
 
 
 def crearTCGrafanaPrometheus(jenkinsParameters, contenido):
-    listaGraganaPrometheus = obtenerTextoConf(
+    listaGrafanaPrometheus = obtenerTextoConf(
         'GRAFANA PROMETHEUS', contenido, 'Referencia GRAFANA PROMETHEUS QA', jenkinsParameters["modify"])
-    creaJira(jenkinsParameters, 'GRAFANA PROMETHEUS', listaGraganaPrometheus)
+    creaJira(jenkinsParameters, 'GRAFANA PROMETHEUS', listaGrafanaPrometheus)
 
 # Es necesario un número par de tablas para crear correctamente el TC
 
@@ -1662,62 +1658,6 @@ def crearTCKibana(jenkinsParameters, contenido):
     for i in range(0, len(listaKibana), 2):
         creaJira(jenkinsParameters, 'KIBANA',listaKibana[i:i+2])
     modificarTesCaseId(listaIssueKibana, 'KIBANA', jenkinsParameters["modify"])
-
-"""
-def main(project, modificar, componente, label=None, fixVersion=None):
-    space = os.getenv("Space")
-    title = os.getenv("Title")
-    page = confluence.get_page_by_title(space, title)
-
-    if page:
-        page2 = confluence.get_page_by_title(
-            space, title, expand='body.storage')
-        contenido = page2['body']['storage']['value']
-
-        zabbix = os.getenv("ZABBIX", "false").lower() == "true"
-        grafana_platform = os.getenv("GRAFANA PLATAFORMA", "false").lower() == "true"
-        grafana_prometheus = os.getenv("GRAFANA PROMETHEUS", "false").lower() == "true"
-        kibana = os.getenv("KIBANA", "false").lower() == "true"
-
-        if zabbix:
-            crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
-
-        if grafana_platform:
-            crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
-
-        if grafana_prometheus:
-            crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
-
-        if kibana:
-            crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
-
-        if zabbix and grafana_platform and grafana_prometheus and kibana:
-            crearTCZabbix(project, contenido, modificar, componente, label, fixVersion)
-            crearTCGrafanaPlatform(project, contenido, modificar, componente, label, fixVersion)
-            crearTCGrafanaPrometheus(project, contenido, modificar, componente, label, fixVersion)
-            crearTCKibana(project, contenido, modificar, componente, label, fixVersion)
-
-    else:
-        raise ValueError("No se encontró la página en Confluence. Verifica los parámetros space y title.")
-"""
-
-# main ("USERSAPITC","GRAFANA PLATFORM",False,"top.user.extraprovision",None,None)
-# main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android",None,None)
-# main ("MBJIRATEST",'ZABBIX',False,"DATAHUB",None,None)
-
-# main ("MBJIRATEST","GRAFANA PROMETHEUS",False,"Android",None,None)
-
-
-# main ("ORCHTC",'ZABBIX',False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
-# main ("MBJIRATEST","GRAFANA PLATFORM",False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
-# main ("ORCHTC","GRAFANA PROMETHEUS",False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
-# main ("ORCHTC",'KIBANA',False,"top.service.config.api",None,"Orquestador_1.23,FEServices_24.12")
-
-# main ("MBJIRATEST",'ZABBIX',False,"Android",None,None)
-# main ("MBJIRATEST","GRAFANA PLATFORM",False,"Android",None,None)
-# main ("MBJIRATEST",'KIBANA',False,"Android",None,None)
-
-#main(os.getenv("Project"),modificarEnv, os.getenv("Componente"), labelEnv, fixVersionEnv)
 
 if __name__ == '__main__':
     jenkinsParameters = getParameters()
