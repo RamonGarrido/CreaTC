@@ -596,6 +596,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
     jira = jiraConnection(options, userJira, passJIRA)
 
     if monitorizacion == 'ZABBIX':
+        print ("\n** ZABBIX **\n\n")
         listaIssueZabbix = []
         for dato in datosConfluence:
             datosFijos = cargarJson('datosFijos.json')
@@ -703,6 +704,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
         modificarTesCaseId(listaIssueZabbix, 'ZABBIX', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PLATFORM':
+        print ("\n** GRAFANA PLATAFORMA **\n\n")
         listaIssueGrafanaPlatform = []
         for dato in datosConfluence:
             datosFijos = cargarJson('datosFijos.json')
@@ -766,6 +768,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                             'GRAFANA PLATFORM', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PROMETHEUS':
+        print ("\n** GRAFANA PROMETHEUS **\n\n")
         listaIssueGrafanaPrometheus = []
         metrics_dict = {}
         created_tickets = set()
@@ -864,6 +867,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
 
     elif monitorizacion == 'KIBANA':
+        print ("\n** KIBANA **\n\n")
         if jenkinsParameters["fixVersion"] is not None:
             fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
             fixVersionFinal = []
