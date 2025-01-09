@@ -867,7 +867,6 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
 
     elif monitorizacion == 'KIBANA':
-        print ("\n** KIBANA **\n\n")
         if jenkinsParameters["fixVersion"] is not None:
             fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
             fixVersionFinal = []
@@ -1659,6 +1658,7 @@ def crearTCGrafanaPrometheus(jenkinsParameters, contenido):
 def crearTCKibana(jenkinsParameters, contenido):
     listaKibana = obtenerTextoConf(
         'KIBANA', contenido, 'Referencia KIBANA QA', jenkinsParameters["modify"])
+    print ("\n** KIBANA **\n\n")
     for i in range(0, len(listaKibana), 2):
         creaJira(jenkinsParameters, 'KIBANA',listaKibana[i:i+2])
     modificarTesCaseId(listaIssueKibana, 'KIBANA', jenkinsParameters["modify"])
