@@ -687,7 +687,6 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                         issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
                         listaIssueZabbix.append(str(issue.key))  # Usamos issue.key aquí
                         print(f'Ticket {issue.key} creado.')
-                        print(issue.key)
 
                         if linked_ticket_zabbix:
                             try:
@@ -761,6 +760,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                 else:
                     # Crear y enlazar un nuevo ticket si no existe
                     issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    print(jiraIssue.summary)
                     print(f'Ticket {issue.key} creado.')
                     listaIssueGrafanaPlatform.append(issue.key)
 
@@ -775,6 +775,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                 else:
                     # Crear y enlazar un nuevo ticket solo si no existe
                     issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    print(jiraIssue.summary)
                     print(f'Ticket {issue.key} creado.')
                     listaIssueGrafanaPlatform.append(issue.key)
 
@@ -866,6 +867,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                     # Crear un nuevo ticket si no existe
                     issue = jira.create_issue(fields=createIssueDict(jiraIssue))
                     created_tickets.add(metric_name)
+                    print(jiraIssue.summary)
                     print(f'Ticket {issue.key} creado.')
                     listaIssueGrafanaPrometheus.append(issue.key)
 
@@ -930,6 +932,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                     else:
                         issue = jira.create_issue(fields=createIssueDict(jiraIssue))
                         created_tickets.add(key)
+                        print(jiraIssue.summary)
                         print(f'Ticket {issue.key} creado.')
                         listaIssueKibana.append(issue.key)
 
@@ -979,6 +982,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                 else:
                     issue = jira.create_issue(fields=createIssueDict(jiraIssue))
                     created_tickets.add(key)
+                    print(jiraIssue.summary)
                     print(f'Ticket {issue.key} creado.')
                     listaIssueKibana.append(issue.key)
 
