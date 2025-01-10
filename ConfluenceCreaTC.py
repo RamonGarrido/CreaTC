@@ -787,13 +787,12 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                             'GRAFANA PLATFORM', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PROMETHEUS':
-        print ("\n** GRAFANA PROMETHEUS **\n\n")
+        print("\n** GRAFANA PROMETHEUS **\n\n")
         listaIssueGrafanaPrometheus = []
         metrics_dict = {}
         created_tickets = set()
 
         for dato in datosConfluence:
-
             if "{" in dato["Metric"]:
                 metric_name = dato["Metric"].split("{")[0]
                 metric_params = dato["Metric"].split("{", 1)[1].strip("}")
@@ -810,7 +809,8 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
         for metric_name, params in metrics_dict.items():
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, {"Metric": metric_name}, datosFijos, jenkinsParameters["component"])
+                monitorizacion, {"Metric": metric_name}, datosFijos, jenkinsParameters["component"]
+            )
             dataset_content = datosFijos[monitorizacion]['DataSet']
 
             new_table = "\n\n\n|| Metric ||\n"
@@ -828,7 +828,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
             jiraIssue = JiraIssue(
                 "", "Test Case", "",
                 createSummary(monitorizacion, datosFijos, {
-                                "Metric": metric_name}, jenkinsParameters["component"]),
+                    "Metric": metric_name}, jenkinsParameters["component"]),
                 jenkinsParameters["label"], jenkinsParameters["component"],
                 datosFijos[monitorizacion]['TestType'],
                 datosFijos[monitorizacion]['TestScope'],
@@ -844,46 +844,42 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
             )
 
             if metric_name not in created_tickets:
-                if jenkinsParameters["modify"]:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(
-                        jira, key)
-                    if ticket_existente:
+                key = dato['Test Case ID']
+                ticket_existente = buscar_ticket_existente_por_key(jira, key)
+
+                if ticket_existente:
+                    # Actualizar ticket existente si está en modo "modify"
+                    if jenkinsParameters["modify"]:
                         fields_to_update = createIssueDict(jiraIssue)
                         fields_to_update.pop('key', None)
                         ticket_existente.update(fields=fields_to_update)
-                        print(
-                            f'Ticket {ticket_existente.key} actualizado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueGrafanaPrometheus.append(
-                            ticket_existente)
-                    else:
-                        jiraIssue.issueKey = jira.create_issue(
-                            fields=createIssueDict(jiraIssue))
-                        created_tickets.add(metric_name)
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueGrafanaPrometheus.append(
-                            str(jiraIssue.issueKey))
-                else:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(
-                        jira, key)
-                    if ticket_existente:
-                        print("TC EXISTENTE: " + str(dato['Test Case ID']))
-                    else:
-                        print(jiraIssue.summary)
-                        jiraIssue.issueKey = jira.create_issue(
-                            fields=createIssueDict(jiraIssue))
-                        created_tickets.add(metric_name)
-                        listaIssueGrafanaPrometheus.append(
-                            str(jiraIssue.issueKey))
-                        print(jiraIssue.issueKey)
+                        print(f'Ticket {ticket_existente.key} actualizado.')
+                        listaIssueGrafanaPrometheus.append(ticket_existente.key)
 
-        modificarTesCaseId(listaIssueGrafanaPrometheus,
-                               'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
+                    # Enlazar ticket existente con el relacionado
+                    if linked_ticket_graf_prom:
+                        linked_ticket = jira.issue(linked_ticket_graf_prom)
+                        jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
+                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}\n")
+
+                else:
+                    # Crear un nuevo ticket si no existe
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    created_tickets.add(metric_name)
+                    print(f'Ticket {issue.key} creado.')
+                    listaIssueGrafanaPrometheus.append(issue.key)
+
+                    # Enlazar ticket recién creado con el relacionado
+                    if linked_ticket_graf_prom:
+                        linked_ticket = jira.issue(linked_ticket_graf_prom)
+                        jira.create_issue_link('tests', issue.key, linked_ticket.key)
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
+
+            else:
+                print(f"El ticket para la métrica {metric_name} ya fue creado previamente.")
+
+        modificarTesCaseId(listaIssueGrafanaPrometheus, 'GRAFANA PROMETHEUS', jenkinsParameters["modify"])
+
 
     elif monitorizacion == 'KIBANA':
         if jenkinsParameters["fixVersion"] is not None:
