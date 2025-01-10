@@ -595,6 +595,11 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
     passJIRA = 'temporal'
     jira = jiraConnection(options, userJira, passJIRA)
 
+    linked_ticket_zabbix = jenkinsParameters["linked_ticket_zabbix"]
+    linked_ticket_graf_plat = jenkinsParameters["linked_ticket_graf_plat"]
+    linked_ticket_graf_prom = jenkinsParameters["linked_ticket_graf_prom"]
+    linked_ticket_kibana = jenkinsParameters["linked_ticket_kibana"]
+
     if monitorizacion == 'ZABBIX':
         print ("\n** ZABBIX **\n\n")
         listaIssueZabbix = []
@@ -621,10 +626,6 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                     datosFijos[monitorizacion]['Procedure'], datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
 
             #linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
-            linked_ticket_zabbix = jenkinsParameters["linked_ticket_zabbix"]
-            linked_ticket_graf_plat = jenkinsParameters["linked_ticket_graf_plat"]
-            linked_ticket_graf_prom = jenkinsParameters["linked_ticket_graf_prom"]
-            linked_ticket_kibana = jenkinsParameters["linked_ticket_kibana"]
             
             if jenkinsParameters["modify"] == True:
                 key = dato['Test Case ID']
