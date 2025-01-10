@@ -644,7 +644,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                             print(f"Enlazando ticket {issue.key} con {linked_ticket.key}.")
 
                             # Crea el enlace entre los tickets
-                            jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                            jira.create_issue_link('tests', issue.key, linked_ticket.key)
                             print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
 
                         except Exception as e:
@@ -660,7 +660,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                     if linked_ticket_zabbix:
                         linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
                         # Usa .key para obtener el key del ticket
-                        jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                        jira.create_issue_link('tests', issue.key, linked_ticket.key)
                         print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
 
             elif jenkinsParameters["modify"] == False:
@@ -675,7 +675,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                 linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtener el ticket relacionado
                                 print(f"Enlazando ticket {ticket_existente.key} con {linked_ticket.key}.")
 
-                                jira.create_issue_link('is tested by', ticket_existente.key, linked_ticket.key)
+                                jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
                                 print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}")
 
                             except Exception as e:
@@ -695,7 +695,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                 print(f"Enlazando ticket {issue.key} con {linked_ticket.key}.")
 
                                 # Crea el enlace entre los tickets
-                                jira.create_issue_link('is tested by', issue.key, linked_ticket.key)
+                                jira.create_issue_link('tests', issue.key, linked_ticket.key)
                                 print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
 
                             except Exception as e:
