@@ -884,106 +884,111 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
     elif monitorizacion == 'KIBANA':
         if jenkinsParameters["fixVersion"] is not None:
             fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
-            fixVersionFinal = []
-            for fv in fixVersionSplit:
-                temporal = {'name': fv}
-                fixVersionFinal.append(temporal)
+            fixVersionFinal = [{'name': fv} for fv in fixVersionSplit]
         else:
             fixVersionFinal = None
+
+        created_tickets = set()
 
         if len(datosConfluence[0]) > 1:
             for dato in datosConfluence[0]:
                 datosFijos = cargarJson('datosFijos.json')
                 datosFijos = actualizarDatosFijos(
-                    monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], dato['functionName'])
+                    monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], dato['functionName']
+                )
 
-                jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], dato['functionName']), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
-                                        datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
-                                            'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
-                                        datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
-                                            'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
-                                        "", "", datosFijos[monitorizacion]['DataSet'],
-                                        "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
+                jiraIssue = JiraIssue(
+                    "", "Test Case", "",
+                    createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], dato['functionName']),
+                    jenkinsParameters["label"], jenkinsParameters["component"],
+                    datosFijos[monitorizacion]['TestType'],
+                    datosFijos[monitorizacion]['TestScope'],
+                    datosFijos[monitorizacion]['ExecutionMode'],
+                    datosFijos[monitorizacion]['AutomationCandidate'],
+                    datosFijos[monitorizacion]['Regression'],
+                    datosFijos[monitorizacion]['TestPriority'],
+                    datosFijos[monitorizacion]['TestReviewed'],
+                    "", "", datosFijos[monitorizacion]['DataSet'],
+                    "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal
+                )
 
-                if jenkinsParameters["modify"] == True:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(
-                        jira, key)
+                key = dato['Test Case ID']
+                if key not in created_tickets:
+                    ticket_existente = buscar_ticket_existente_por_key(jira, key)
                     if ticket_existente:
-                        fields_to_update = createIssueDict(jiraIssue)
-                        fields_to_update.pop('key', None)
-                        ticket_existente.update(fields=fields_to_update)
-                        print(
-                            f'Ticket {ticket_existente.key} actualizado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueKibana.append(ticket_existente)
+                        if jenkinsParameters["modify"]:
+                            fields_to_update = createIssueDict(jiraIssue)
+                            fields_to_update.pop('key', None)
+                            ticket_existente.update(fields=fields_to_update)
+                            print(f'Ticket {ticket_existente.key} actualizado.')
+                            listaIssueKibana.append(ticket_existente.key)
+
+                        if linked_ticket_kibana:
+                            linked_ticket = jira.issue(linked_ticket_kibana)
+                            jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
+                            print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}\n")
                     else:
-                        jiraIssue.issueKey = jira.create_issue(
-                            fields=createIssueDict(jiraIssue))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.summary)
-                        print(jiraIssue.issueKey)
-                        listaIssueKibana.append(str(jiraIssue.issueKey))
-                elif jenkinsParameters["modify"] == False:
-                    key = dato['Test Case ID']
-                    ticket_existente = buscar_ticket_existente_por_key(
-                        jira, key)
-                    if ticket_existente:
-                        print("TC EXISTENTE: "+str(key))
-                    else:
-                        print(jiraIssue.summary)
-                        jiraIssue.issueKey = jira.create_issue(
-                            fields=createIssueDict(jiraIssue))
-                        listaIssueKibana.append(str(jiraIssue.issueKey))
-                        print(f'Ticket {jiraIssue.issueKey} creado.')
-                        print(jiraIssue.issueKey)
+                        issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                        created_tickets.add(key)
+                        print(f'Ticket {issue.key} creado.')
+                        listaIssueKibana.append(issue.key)
+
+                        if linked_ticket_kibana:
+                            linked_ticket = jira.issue(linked_ticket_kibana)
+                            jira.create_issue_link('tests', issue.key, linked_ticket.key)
+                            print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
+                else:
+                    print(f"El ticket con Test Case ID {key} ya fue procesado previamente.")
 
         else:
             datosFijos = cargarJson('datosFijos.json')
             datosFijos = actualizarDatosFijos(
-                monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], datosConfluence[0][0]['functionName'])
+                monitorizacion, datosConfluence, datosFijos, jenkinsParameters["component"], datosConfluence[0][0]['functionName']
+            )
 
-            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], datosConfluence[0][0]['functionName']), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
-                                    datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
-                                        'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
-                                    datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
-                                        'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
-                                    "", "", datosFijos[monitorizacion]['DataSet'],
-                                    "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
+            jiraIssue = JiraIssue(
+                "", "Test Case", "",
+                createSummary(monitorizacion, datosFijos, datosConfluence, jenkinsParameters["component"], datosConfluence[0][0]['functionName']),
+                jenkinsParameters["label"], jenkinsParameters["component"],
+                datosFijos[monitorizacion]['TestType'],
+                datosFijos[monitorizacion]['TestScope'],
+                datosFijos[monitorizacion]['ExecutionMode'],
+                datosFijos[monitorizacion]['AutomationCandidate'],
+                datosFijos[monitorizacion]['Regression'],
+                datosFijos[monitorizacion]['TestPriority'],
+                datosFijos[monitorizacion]['TestReviewed'],
+                "", "", datosFijos[monitorizacion]['DataSet'],
+                "", datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal
+            )
 
-            if jenkinsParameters["modify"] == True:
-                key = datosConfluence[0][0]['Test Case ID']
-                ticket_existente = buscar_ticket_existente_por_key(
-                    jira, key)
+            key = datosConfluence[0][0]['Test Case ID']
+            if key not in created_tickets:
+                ticket_existente = buscar_ticket_existente_por_key(jira, key)
                 if ticket_existente:
-                    fields_to_update = createIssueDict(jiraIssue)
-                    fields_to_update.pop('key', None)
-                    ticket_existente.update(fields=fields_to_update)
-                    print(f'Ticket {ticket_existente.key} actualizado.')
-                    print(jiraIssue.summary)
-                    print(jiraIssue.issueKey)
-                    listaIssueKibana.append(ticket_existente)
+                    if jenkinsParameters["modify"]:
+                        fields_to_update = createIssueDict(jiraIssue)
+                        fields_to_update.pop('key', None)
+                        ticket_existente.update(fields=fields_to_update)
+                        print(f'Ticket {ticket_existente.key} actualizado.')
+                        listaIssueKibana.append(ticket_existente.key)
+
+                    if linked_ticket_kibana:
+                        linked_ticket = jira.issue(linked_ticket_kibana)
+                        jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
+                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}\n")
                 else:
-                    jiraIssue.issueKey = jira.create_issue(
-                        fields=createIssueDict(jiraIssue))
-                    print(f'Ticket {jiraIssue.issueKey} creado.')
-                    print(jiraIssue.summary)
-                    print(jiraIssue.issueKey)
-                    listaIssueKibana.append(str(jiraIssue.issueKey))
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    created_tickets.add(key)
+                    print(f'Ticket {issue.key} creado.')
+                    listaIssueKibana.append(issue.key)
+
+                    if linked_ticket_kibana:
+                        linked_ticket = jira.issue(linked_ticket_kibana)
+                        jira.create_issue_link('tests', issue.key, linked_ticket.key)
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
             else:
-                key = datosConfluence[0][0]['Test Case ID']
-                ticket_existente = buscar_ticket_existente_por_key(
-                    jira, key)
-                if ticket_existente:
-                    print("TC EXISTENTE: "+str(key))
-                else:
-                    print(jiraIssue.summary)
-                    jiraIssue.issueKey = jira.create_issue(
-                        fields=createIssueDict(jiraIssue))
-                    listaIssueKibana.append(str(jiraIssue.issueKey))
-                    print(f'Ticket {jiraIssue.issueKey} creado.')
-                    print(jiraIssue.issueKey)
+                print(f"El ticket con Test Case ID {key} ya fue procesado previamente.")
+
 
 
 def crearJson(diccionario, archivo):
