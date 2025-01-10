@@ -624,8 +624,6 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                         'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
                                     "", datosFijos[monitorizacion]['PreRequisites'], datosFijos[monitorizacion]['DataSet'],
                                     datosFijos[monitorizacion]['Procedure'], datosFijos[monitorizacion]['ExpectedResult'], jenkinsParameters["project"], fixVersionFinal)
-
-            #linked_ticket_zabbix = os.getenv("Zabbix Is Tested By")
             
             if jenkinsParameters["modify"] == True:
                 key = dato['Test Case ID']
@@ -648,7 +646,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
 
                             # Crea el enlace entre los tickets
                             jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                            print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                            print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
 
                         except Exception as e:
                             print(f"Error al intentar enlazar los tickets: {e}")
@@ -664,7 +662,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                         linked_ticket = jira.issue(linked_ticket_zabbix)  # Obtenemos el ticket relacionado
                         # Usa .key para obtener el key del ticket
                         jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
 
             elif jenkinsParameters["modify"] == False:
                 if 'Test Case ID' in dato:
@@ -679,7 +677,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
                                 print(f"Enlazando ticket {ticket_existente.key} con {linked_ticket.key}.")
 
                                 jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
-                                print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}")
+                                print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}\n")
 
                             except Exception as e:
                                 print(f"Error al intentar enlazar los tickets: {e}")
@@ -699,7 +697,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
 
                                 # Crea el enlace entre los tickets
                                 jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                                print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                                print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
 
                             except Exception as e:
                                 print(f"Error al intentar enlazar los tickets: {e}")
@@ -707,7 +705,7 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
         modificarTesCaseId(listaIssueZabbix, 'ZABBIX', jenkinsParameters["modify"])
 
     elif monitorizacion == 'GRAFANA PLATFORM':
-        print ("\n** GRAFANA PLATAFORMA **\n\n")
+        print("\n** GRAFANA PLATAFORMA **\n\n")
         listaIssueGrafanaPlatform = []
         for dato in datosConfluence:
             datosFijos = cargarJson('datosFijos.json')
@@ -716,74 +714,74 @@ def creaJira(jenkinsParameters, monitorizacion, datosConfluence):
 
             if jenkinsParameters["fixVersion"] is not None:
                 fixVersionSplit = jenkinsParameters["fixVersion"].split(",")
-                fixVersionFinal = []
-                for fv in fixVersionSplit:
-                    temporal = {'name': fv}
-                    fixVersionFinal.append(temporal)
+                fixVersionFinal = [{'name': fv} for fv in fixVersionSplit]
             else:
                 fixVersionFinal = None
 
-            jiraIssue = JiraIssue("", "Test Case", "", createSummary(monitorizacion, datosFijos, dato, jenkinsParameters["component"]), jenkinsParameters["label"], jenkinsParameters["component"], datosFijos[monitorizacion]['TestType'],
-                                    datosFijos[monitorizacion]['TestScope'], datosFijos[monitorizacion][
-                                        'ExecutionMode'], datosFijos[monitorizacion]['AutomationCandidate'],
-                                    datosFijos[monitorizacion]['Regression'], datosFijos[monitorizacion][
-                                        'TestPriority'], datosFijos[monitorizacion]['TestReviewed'],
-                                    datosFijos[monitorizacion]['Description'], datosFijos[monitorizacion][
-                                        'PreRequisites'], datosFijos[monitorizacion]['DataSet'],
-                                    "", "", jenkinsParameters["project"], fixVersionFinal)
+            jiraIssue = JiraIssue(
+                "",
+                "Test Case",
+                "",
+                createSummary(monitorizacion, datosFijos, dato, jenkinsParameters["component"]),
+                jenkinsParameters["label"],
+                jenkinsParameters["component"],
+                datosFijos[monitorizacion]['TestType'],
+                datosFijos[monitorizacion]['TestScope'],
+                datosFijos[monitorizacion]['ExecutionMode'],
+                datosFijos[monitorizacion]['AutomationCandidate'],
+                datosFijos[monitorizacion]['Regression'],
+                datosFijos[monitorizacion]['TestPriority'],
+                datosFijos[monitorizacion]['TestReviewed'],
+                datosFijos[monitorizacion]['Description'],
+                datosFijos[monitorizacion]['PreRequisites'],
+                datosFijos[monitorizacion]['DataSet'],
+                "",
+                "",
+                jenkinsParameters["project"],
+                fixVersionFinal
+            )
+
+            key = dato['Test Case ID']
+            ticket_existente = buscar_ticket_existente_por_key(jira, key)
 
             if jenkinsParameters["modify"] == True:
-                key = dato['Test Case ID']
-                ticket_existente = buscar_ticket_existente_por_key(
-                    jira, key)
                 if ticket_existente:
+                    # Actualizar ticket existente
                     fields_to_update = createIssueDict(jiraIssue)
                     fields_to_update.pop('key', None)
                     ticket_existente.update(fields=fields_to_update)
                     print(f'Ticket {ticket_existente.key} actualizado.')
-                    print(jiraIssue.summary)
-                    print(jiraIssue.issueKey)
-                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
-                    listaIssueGrafanaPlatform.append(ticket_existente)
+                    listaIssueGrafanaPlatform.append(ticket_existente.key)
+
+                    # Enlazar si es necesario
                     if linked_ticket_graf_plat:
                         linked_ticket = jira.issue(linked_ticket_graf_plat)  # Obtenemos el ticket relacionado
-                        # Usa .key para obtener el key del ticket
-                        jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                        jira.create_issue_link('tests', ticket_existente.key, linked_ticket.key)
+                        print(f"Ticket {ticket_existente.key} enlazado con {linked_ticket.key}\n")
                 else:
-                    jiraIssue.issueKey = jira.create_issue(
-                        fields=createIssueDict(jiraIssue))
-                    print(f'Ticket {jiraIssue.issueKey} creado.')
-                    print(jiraIssue.summary)
-                    print(jiraIssue.issueKey)
-                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
-                    listaIssueGrafanaPlatform.append(
-                        str(jiraIssue.issueKey))
+                    # Crear y enlazar un nuevo ticket si no existe
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    print(f'Ticket {issue.key} creado.')
+                    listaIssueGrafanaPlatform.append(issue.key)
+
                     if linked_ticket_graf_plat:
-                        linked_ticket = jira.issue(linked_ticket_graf_plat)  # Obtenemos el ticket relacionado
-                        # Usa .key para obtener el key del ticket
+                        linked_ticket = jira.issue(linked_ticket_graf_plat)
                         jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
 
             elif jenkinsParameters["modify"] == False:
-                key = dato['Test Case ID']
-                ticket_existente = buscar_ticket_existente_por_key(
-                    jira, key)
                 if ticket_existente:
-                    print("TC EXISTENTE: "+str(key))
+                    print("TC EXISTENTE: " + str(key))
                 else:
-                    print(jiraIssue.summary)
-                    jiraIssue.issueKey = jira.create_issue(
-                        fields=createIssueDict(jiraIssue))
-                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))  # Crea el issue correctamente
-                    listaIssueGrafanaPlatform.append(
-                        str(jiraIssue.issueKey))
-                    print(jiraIssue.issueKey)
+                    # Crear y enlazar un nuevo ticket solo si no existe
+                    issue = jira.create_issue(fields=createIssueDict(jiraIssue))
+                    print(f'Ticket {issue.key} creado.')
+                    listaIssueGrafanaPlatform.append(issue.key)
+
                     if linked_ticket_graf_plat:
-                        linked_ticket = jira.issue(linked_ticket_graf_plat)  # Obtenemos el ticket relacionado
-                        # Usa .key para obtener el key del ticket
+                        linked_ticket = jira.issue(linked_ticket_graf_plat)
                         jira.create_issue_link('tests', issue.key, linked_ticket.key)
-                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}")
+                        print(f"Ticket {issue.key} enlazado con {linked_ticket.key}\n")
 
         modificarTesCaseId(listaIssueGrafanaPlatform,
                             'GRAFANA PLATFORM', jenkinsParameters["modify"])
