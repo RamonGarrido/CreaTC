@@ -1325,117 +1325,200 @@ def modificarTesCaseId(key, monitorizacion, modificar):
         elif monitorizacion == 'GRAFANA PROMETHEUS':
             page = confluence.get_page_by_title(space, title)
 
-            if not page:
-                print("Página no encontrada.")
-                return
+            if page:
+                # Obtén todo el contenido de la página
+                page2 = confluence.get_page_by_title(space, title, expand='body.storage')
+                contenido = page2['body']['storage']['value']
 
-            # Obtén el contenido completo de la página
-            page2 = confluence.get_page_by_title(space, title, expand='body.storage')
-            contenido = page2['body']['storage']['value']
+                # Parseamos el contenido completo con BeautifulSoup
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
 
-            # Parsear el contenido con BeautifulSoup
-            contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
+                # Buscamos la referencia "Referencia GRAFANA PROMETHEUS QA" en el contenido
+                contenidoSplit = contenido.split("Referencia GRAFANA PROMETHEUS QA")
+                if len(contenidoSplit) < 2:
+                    print("No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
+                    return
 
-            # Dividir el contenido por la referencia
-            contenido_split = contenido.split("Referencia GRAFANA PROMETHEUS QA")
-            if len(contenido_split) < 2:
-                print("No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
-                return
+                # Trabajamos con la parte después de la referencia
+                contenido_despues_referencia = contenidoSplit[1]
+                contenido_despues_soup = BeautifulSoup(contenido_despues_referencia, 'html.parser')
 
-            # Trabajar con la parte después de la referencia
-            contenido_despues_referencia = contenido_split[1]
-            contenido_despues_soup = BeautifulSoup(contenido_despues_referencia, 'html.parser')
+                # Buscamos todas las tablas en la parte después de la referencia
+                tablas = contenido_despues_soup.find_all('table')
 
-            # Buscar y procesar la primera tabla
-            tablas = contenido_despues_soup.find_all('table')
-            if not tablas:
-                print("No se encontró ninguna tabla después de la referencia.")
-                return
+                # Tomamos la primera tabla (la que queremos modificar)
+                tabla_despues_de_frase = tablas[0]
 
-            tabla_despues_de_frase = tablas[0]
+                # Convertimos la tabla en un DataFrame para manipularla
+                df = pd.read_html(str(tabla_despues_de_frase))[0]
+                # Eliminamos la fila de encabezados original
+                df = df.drop(df.index[0])
+                # Las columnas que nos interesan
+                columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
 
-            # Convertir la tabla a DataFrame
-            df = pd.read_html(str(tabla_despues_de_frase))[0]
-            df = df.drop(df.index[0])  # Eliminar fila de encabezados originales
+                max_index = df.shape[1] - 1
+                if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
+                    columnas_deseadas_nombres = [
+                        df.columns[idx] for idx in columnas_deseadas_indices]
+                    df_seleccionado = df[columnas_deseadas_nombres]
+                    df_seleccionado.columns = columnas_deseadas_indices
+                else:
+                    print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
+                    return
 
-            columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
-            max_index = df.shape[1] - 1
+                # Aquí empieza la actualización de las celdas según 'modificar'
+                if not modificar:
+                    contador = 0
+                    for index, fila in df_seleccionado.iterrows():
+                        fila_dict = fila.to_dict()
+                        if pd.isnull(fila_dict[13]) or fila_dict[13] == "":
+                            if contador == len(key):
+                                break
+                            # Insertamos la clave en la columna 13
+                            fila_dict[13] = key[contador]
+                            df.at[index, 13] = fila_dict[13]
+                            contador += 1
 
-            if not all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
-                print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
-                return
+                    # Actualizamos el HTML de la tabla en el DOM de BeautifulSoup
+                    filas = tabla_despues_de_frase.find_all('tr')
+                    cont = 0
+                    valorMetricAux = ""
+                    for i, fila in enumerate(filas):
+                        celdas = fila.find_all('td')
+                        for j, celda in enumerate(celdas):
+                            if j == 0:
+                                celda_valor_aux = celda.get_text(strip=True)
+                                valorMetric = celda_valor_aux.split("{")[0]
+                                if not valorMetricAux:
+                                    valorMetricAux = valorMetric
 
-            columnas_deseadas_nombres = [df.columns[idx] for idx in columnas_deseadas_indices]
-            df_seleccionado = df[columnas_deseadas_nombres]
-            df_seleccionado.columns = columnas_deseadas_indices
+                            if j == 13:  # La columna que queremos modificar
+                                celda_valor = celda.get_text(strip=True)
+                                if pd.isnull(celda_valor) or celda_valor == "":
+                                    if valorMetric != valorMetricAux:
+                                        cont += 1
+                                        valorMetricAux = valorMetric
+                                    if cont == len(key):
+                                        break
+                                    # Modificar la celda con el enlace de Jira
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                    celda.string = ''  # Limpiar el contenido de la celda
+                                    # Insertar el enlace
+                                    celda.append(BeautifulSoup(enlace, 'html.parser'))
 
-            # Modificar o actualizar claves
-            contador = 0
-            for index, fila in df_seleccionado.iterrows():
-                if modificar or (pd.isnull(fila[13]) or fila[13] == ""):
-                    if contador >= len(key):
-                        break
-                    df.at[index, 13] = key[contador]
-                    contador += 1
+                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
+                    celdas_fila_13 = []
+                    for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            celdas_fila_13.append(celdas[13])
 
-            # Actualizar el HTML de la tabla
-            filas = tabla_despues_de_frase.find_all('tr')
-            cont = 0
-            for i, fila in enumerate(filas):
-                celdas = fila.find_all('td')
-                for j, celda in enumerate(celdas):
-                    if j == 13:
-                        enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
-                        celda.string = ''
-                        celda.append(BeautifulSoup(enlace, 'html.parser'))
-                        cont += 1
+                    i = 0
+                    while i < len(celdas_fila_13):
+                        valor_celda = celdas_fila_13[i].get_text(strip=True)
+                        j = i + 1
+                        while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
+                            # Si las celdas tienen el mismo valor, combinamos
+                            # Eliminamos la celda repetida
+                            celdas_fila_13[j].extract()
+                            j += 1
+                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
+                        if j > i + 1:
+                            celdas_fila_13[i]['rowspan'] = j - \
+                                i  # Combinamos las celdas
+                        i = j
 
-            # Combinar celdas con el mismo valor en la columna 13
-            celdas_fila_13 = [fila.find_all('td')[13] for fila in filas if len(fila.find_all('td')) > 13]
+                    # Actualizamos el HTML de la tabla modificada
+                    tabla_html_actualizada = str(tabla_despues_de_frase)
+                    tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
-            i = 0
-            while i < len(celdas_fila_13):
-                valor_celda = celdas_fila_13[i].get_text(strip=True)
-                j = i + 1
-                while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
-                    celdas_fila_13[j].extract()
-                    j += 1
-                if j > i + 1:
-                    celdas_fila_13[i]['rowspan'] = j - i
-                i = j
+                elif modificar:
+                    contador = 0
+                    for index, fila in df_seleccionado.iterrows():
+                        fila_dict = fila.to_dict()
+                        # Actualizamos la columna 13 con la nueva clave
+                        fila_dict[13] = key[contador]
+                        df.at[index, 13] = fila_dict[13]
+                        contador += 1
 
-            # Actualizar el HTML completo
-            tabla_html_actualizada = str(tabla_despues_de_frase)
-            tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+                    filas = tabla_despues_de_frase.find_all('tr')
+                    cont = 0
+                    for i, fila in enumerate(filas):
+                        celdas = fila.find_all('td')
+                        for j, celda in enumerate(celdas):
+                            if j == 13:
+                                # Modificar la celda con el enlace de Jira
+                                enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                celda.string = ''  # Limpiar el contenido de la celda
+                                # Insertar el enlace
+                                celda.append(BeautifulSoup(enlace, 'html.parser'))
+                                cont += 1
 
-            contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
-            frase = "Referencia GRAFANA PROMETHEUS QA"
-            frase_tag = contenido_completo_soup.find(string=frase)
+                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
+                    celdas_fila_13 = []
+                    for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            celdas_fila_13.append(celdas[13])
 
-            if frase_tag:
-                siguiente_elemento = frase_tag.find_next()
-                while siguiente_elemento:
-                    if siguiente_elemento.name == 'table':
-                        siguiente_elemento.replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
-                        break
-                    siguiente_elemento = siguiente_elemento.find_next()
-            else:
-                print("Error: No se encontró una tabla después de la referencia.")
-                return
+                    i = 0
+                    while i < len(celdas_fila_13):
+                        valor_celda = celdas_fila_13[i].get_text(strip=True)
+                        j = i + 1
+                        while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
+                            # Si las celdas tienen el mismo valor, combinamos
+                            # Eliminamos la celda repetida
+                            celdas_fila_13[j].extract()
+                            j += 1
+                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
+                        if j > i + 1:
+                            celdas_fila_13[i]['rowspan'] = j - \
+                                i  # Combinamos las celdas
+                        i = j
 
-            # Convertir contenido actualizado a HTML y subir a Confluence
-            html_completo_actualizado = str(contenido_completo_soup)
-            status = confluence.update_page(
-                page_id=page['id'],
-                title=title,
-                body=html_completo_actualizado,
-                version_comment="TC Grafana Prometheus"
-            )
+                    # Actualizamos el HTML de la tabla modificada
+                    tabla_html_actualizada = str(tabla_despues_de_frase)
+                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
-            if status:
-                print('Página actualizada exitosamente')
-            else:
-                print('Error al actualizar la página')
+                contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
+
+                # Busca la referencia "Referencia GRAFANA PROMETHEUS QA"
+                frase = "Referencia GRAFANA PROMETHEUS QA"
+                frase_tag = contenido_completo_soup.find(string=frase)
+
+                # Encuentra la tabla inmediatamente después de la referencia
+                tabla_despues_de_frase = None
+                if frase_tag:
+                    siguiente_elemento = frase_tag.find_next()
+                    while siguiente_elemento:
+                        if siguiente_elemento.name == 'table':
+                            tabla_despues_de_frase = siguiente_elemento
+                            break
+                        siguiente_elemento = siguiente_elemento.find_next()
+
+                if tabla_despues_de_frase:
+                    # Reemplaza la tabla encontrada con la tabla actualizada
+                    tabla_despues_de_frase.replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+                else:
+                    print("Error: No se encontró una tabla después de la referencia.")
+                    return
+
+                # Convertimos todo el contenido actualizado en HTML
+                html_completo_actualizado = str(contenido_completo_soup)
+
+                # Actualizamos la página completa en Confluence
+                status = confluence.update_page(
+                    page_id=page['id'],
+                    title=title,
+                    body=html_completo_actualizado,
+                    version_comment="TC Grafana Prometheus"
+                )
+
+                if status:
+                    print('Página actualizada exitosamente')
+                else:
+                    print('Error al actualizar la página')
+
         elif monitorizacion == 'KIBANA':
             page = confluence.get_page_by_title(space, title)
 
