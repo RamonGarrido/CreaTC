@@ -299,11 +299,15 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
                             ' ', '\n')
                     listaGrafana.append(fila_dict)
 
-        elif modificar == True:
+        elif modificar:
             for index, fila in df_seleccionado.iterrows():
                 fila_dict = fila.to_dict()
-                fila_dict['Métrica'] = fila_dict['Métrica'].replace(
-                            ' ', '\n') 
+                # Asegurarse de que 'Métrica' es un string antes de aplicar 'replace'
+                if isinstance(fila_dict['Métrica'], str):
+                    fila_dict['Métrica'] = fila_dict['Métrica'].replace(' ', '\n')
+                else:
+                    # Convertir a string si es necesario
+                    fila_dict['Métrica'] = str(fila_dict['Métrica']).replace(' ', '\n')
                 listaGrafana.append(fila_dict)
 
         return listaGrafana
