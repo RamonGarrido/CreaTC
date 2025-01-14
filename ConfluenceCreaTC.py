@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import os
 import argparse
 
-
 class JiraIssue:
     def __init__(self, issueKey, issueType, userStoryKey, summary, labels, components, testType, testScope,
                  executionMode, automationCandidate, regression, testPriority, testReviewed, description, preRequisites,
@@ -89,23 +88,6 @@ confluence = Confluence(
     password="temporal",
     cloud=True)
 
-# componentName = "Android"
-# space='VIDEOTOOLS'
-# title='Rebirth Catalog 01 - Loader (Openshift)'
-
-# space='VIDEOTOOLS'
-# title='User Extraprovision (Openshift)'
-
-# space='VIDEOTOOLS'
-# title='playback-sessions-agent'
-
-# space='VIDEOTOOLS'
-# title='top.enablers.cwf_db'
-
-# space='VIDEOTOOLS'
-# title='labels-consumer'
-
-
 def getParameters() :
     parameters = {}
     space = os.getenv("Space")
@@ -150,7 +132,6 @@ def getParameters() :
     parameters.update({"linked_ticket_kibana":linked_ticket_kibana})
     
     return parameters
-    
 
 """
 nombre_claves_ZABBIX = {
@@ -194,10 +175,7 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
         soup = BeautifulSoup(html_completo, 'html.parser')
         table = soup.find('table')
         df = pd.read_html(str(table))[0]
-        # columnas_deseadas = ['PATTERN TO SEARCH','SEVERITY','ALARM NAME','ALARM TEXT','CONDITION','ACTION','Test Case ID']
-        # columnas_deseadas_indices = [3,4,5,6,7,8,12]
         columnas_deseadas_indices = [2, 3, 4, 5, 6, 7, 11]
-        # df_seleccionado = df[columnas_deseadas]
         max_index = df.shape[1] - 1
         if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
             columnas_deseadas_nombres = [df.columns[idx]
@@ -218,9 +196,6 @@ def obtenerTextoConf(monitorizacion, contenido, referencia, modificar):
 
                 nuevo_data = {
                     nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items()}
-                # nuevo_data = {nombre_claves_ZABBIX[old_key]: value for old_key, value in fila_dict.items() if old_key in nombre_claves_ZABBIX and not pd.isna(value)}
-                # if 'Test Case ID' in nombre_claves_ZABBIX and not pd.isna(fila_dict[11]):
-                #    nuevo_data[nombre_claves_ZABBIX[11]] = fila_dict[11]
                 listaZabbix.append(nuevo_data)
 
         elif modificar == True:
@@ -528,13 +503,9 @@ def actualizarDatosFijos(monitorizacion, datosConf, datosFijos, componente, fn=N
             return datosFijos
 
         elif monitorizacion == 'GRAFANA PROMETHEUS':
-            # Default to empty string if not present
             dbInflux = datosConf.get('DB En Influx', '')
-            # Default to empty string if not present
             medida = datosConf.get('Medida', '')
-            # Default to empty string if not present
             metrica = datosConf.get('Métrica', '')
-            # Default to empty string if not present
             type = datosConf.get('Type', '')
 
             # Asegurarse de que los valores numéricos se convierten a cadena antes de hacer replace
@@ -1246,7 +1217,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
-                                # celda.string = str(data_actualizada[i-1][j])
                                 if data_actualizada[i-1][j] in key:
                                     nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
                                 else:
@@ -1295,7 +1265,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
                             if j in columnas_deseadas:
-                                # celda.string = str(data_actualizada[i-1][j])
                                 if data_actualizada[i-1][j] in key:
                                     nuevo_contenido = f'<a href="https://jira.tid.es/browse/{data_actualizada[i-1][j]}">{data_actualizada[i-1][j]}</a>'
                                 else:
@@ -1326,34 +1295,21 @@ def modificarTesCaseId(key, monitorizacion, modificar):
             page = confluence.get_page_by_title(space, title)
 
             if page:
-                # Obtén todo el contenido de la página
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
-
-                # Parseamos el contenido completo con BeautifulSoup
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
-
-                # Buscamos la referencia "Referencia GRAFANA PROMETHEUS QA" en el contenido
                 contenidoSplit = contenido.split("Referencia GRAFANA PROMETHEUS QA")
                 if len(contenidoSplit) < 2:
                     print("No se encontró la referencia 'Referencia GRAFANA PROMETHEUS QA'.")
                     return
 
-                # Trabajamos con la parte después de la referencia
                 contenido_despues_referencia = contenidoSplit[1]
                 contenido_despues_soup = BeautifulSoup(contenido_despues_referencia, 'html.parser')
 
-                # Buscamos todas las tablas en la parte después de la referencia
                 tablas = contenido_despues_soup.find_all('table')
-
-                # Tomamos la primera tabla (la que queremos modificar)
                 tabla_despues_de_frase = tablas[0]
-
-                # Convertimos la tabla en un DataFrame para manipularla
                 df = pd.read_html(str(tabla_despues_de_frase))[0]
-                # Eliminamos la fila de encabezados original
                 df = df.drop(df.index[0])
-                # Las columnas que nos interesan
                 columnas_deseadas_indices = [0, 1, 3, 6, 7, 13]
 
                 max_index = df.shape[1] - 1
@@ -1366,7 +1322,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print(f"Algunos índices están fuera del rango. El rango válido es 0 a {max_index}.")
                     return
 
-                # Aquí empieza la actualización de las celdas según 'modificar'
                 if not modificar:
                     contador = 0
                     for index, fila in df_seleccionado.iterrows():
@@ -1374,12 +1329,10 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         if pd.isnull(fila_dict[13]) or fila_dict[13] == "":
                             if contador == len(key):
                                 break
-                            # Insertamos la clave en la columna 13
                             fila_dict[13] = key[contador]
                             df.at[index, 13] = fila_dict[13]
                             contador += 1
 
-                    # Actualizamos el HTML de la tabla en el DOM de BeautifulSoup
                     filas = tabla_despues_de_frase.find_all('tr')
                     cont = 0
                     valorMetricAux = ""
@@ -1392,21 +1345,17 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 if not valorMetricAux:
                                     valorMetricAux = valorMetric
 
-                            if j == 13:  # La columna que queremos modificar
+                            if j == 13:  
                                 celda_valor = celda.get_text(strip=True)
                                 if pd.isnull(celda_valor) or celda_valor == "":
                                     if valorMetric != valorMetricAux:
                                         cont += 1
                                         valorMetricAux = valorMetric
-                                    if cont == len(key):
-                                        break
-                                    # Modificar la celda con el enlace de Jira
-                                    enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
-                                    celda.string = ''  # Limpiar el contenido de la celda
-                                    # Insertar el enlace
-                                    celda.append(BeautifulSoup(enlace, 'html.parser'))
+                                    if cont < len(key):
+                                        enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                        celda.string = ''  # Limpiar el contenido de la celda
+                                        celda.append(BeautifulSoup(enlace, 'html.parser'))
 
-                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
                     celdas_fila_13 = []
                     for fila in filas:
                         celdas = fila.find_all('td')
@@ -1418,17 +1367,12 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         valor_celda = celdas_fila_13[i].get_text(strip=True)
                         j = i + 1
                         while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
-                            # Si las celdas tienen el mismo valor, combinamos
-                            # Eliminamos la celda repetida
                             celdas_fila_13[j].extract()
                             j += 1
-                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
                         if j > i + 1:
-                            celdas_fila_13[i]['rowspan'] = j - \
-                                i  # Combinamos las celdas
+                            celdas_fila_13[i]['rowspan'] = j - i
                         i = j
 
-                    # Actualizamos el HTML de la tabla modificada
                     tabla_html_actualizada = str(tabla_despues_de_frase)
                     tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
@@ -1436,7 +1380,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     contador = 0
                     for index, fila in df_seleccionado.iterrows():
                         fila_dict = fila.to_dict()
-                        # Actualizamos la columna 13 con la nueva clave
                         fila_dict[13] = key[contador]
                         df.at[index, 13] = fila_dict[13]
                         contador += 1
@@ -1447,14 +1390,11 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
                             if j == 13:
-                                # Modificar la celda con el enlace de Jira
                                 enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
-                                celda.string = ''  # Limpiar el contenido de la celda
-                                # Insertar el enlace
+                                celda.string = ''  
                                 celda.append(BeautifulSoup(enlace, 'html.parser'))
                                 cont += 1
 
-                    # Aquí comienza la lógica para combinar las celdas de la columna 13 con el mismo valor
                     celdas_fila_13 = []
                     for fila in filas:
                         celdas = fila.find_all('td')
@@ -1466,27 +1406,20 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         valor_celda = celdas_fila_13[i].get_text(strip=True)
                         j = i + 1
                         while j < len(celdas_fila_13) and celdas_fila_13[j].get_text(strip=True) == valor_celda:
-                            # Si las celdas tienen el mismo valor, combinamos
-                            # Eliminamos la celda repetida
                             celdas_fila_13[j].extract()
                             j += 1
-                        # Actualizamos la celda original con el atributo rowspan para cubrir las celdas combinadas
                         if j > i + 1:
-                            celdas_fila_13[i]['rowspan'] = j - \
-                                i  # Combinamos las celdas
+                            celdas_fila_13[i]['rowspan'] = j - i
                         i = j
 
-                    # Actualizamos el HTML de la tabla modificada
                     tabla_html_actualizada = str(tabla_despues_de_frase)
                     tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
 
-                # Busca la referencia "Referencia GRAFANA PROMETHEUS QA"
                 frase = "Referencia GRAFANA PROMETHEUS QA"
                 frase_tag = contenido_completo_soup.find(string=frase)
 
-                # Encuentra la tabla inmediatamente después de la referencia
                 tabla_despues_de_frase = None
                 if frase_tag:
                     siguiente_elemento = frase_tag.find_next()
@@ -1497,16 +1430,13 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         siguiente_elemento = siguiente_elemento.find_next()
 
                 if tabla_despues_de_frase:
-                    # Reemplaza la tabla encontrada con la tabla actualizada
                     tabla_despues_de_frase.replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
                 else:
                     print("Error: No se encontró una tabla después de la referencia.")
                     return
 
-                # Convertimos todo el contenido actualizado en HTML
                 html_completo_actualizado = str(contenido_completo_soup)
 
-                # Actualizamos la página completa en Confluence
                 status = confluence.update_page(
                     page_id=page['id'],
                     title=title,
