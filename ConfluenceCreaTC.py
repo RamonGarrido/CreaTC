@@ -1293,7 +1293,6 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
         elif monitorizacion == 'GRAFANA PROMETHEUS':
             page = confluence.get_page_by_title(space, title)
-
             if page:
                 page2 = confluence.get_page_by_title(space, title, expand='body.storage')
                 contenido = page2['body']['storage']['value']
@@ -1314,8 +1313,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
 
                 max_index = df.shape[1] - 1
                 if all(0 <= idx <= max_index for idx in columnas_deseadas_indices):
-                    columnas_deseadas_nombres = [
-                        df.columns[idx] for idx in columnas_deseadas_indices]
+                    columnas_deseadas_nombres = [df.columns[idx] for idx in columnas_deseadas_indices]
                     df_seleccionado = df[columnas_deseadas_nombres]
                     df_seleccionado.columns = columnas_deseadas_indices
                 else:
@@ -1326,6 +1324,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     contador = 0
                     for index, fila in df_seleccionado.iterrows():
                         fila_dict = fila.to_dict()
+                        # Verificamos si la columna 13 está vacía (Test Case ID)
                         if pd.isnull(fila_dict[13]) or fila_dict[13] == "":
                             if contador == len(key):
                                 break
@@ -1345,7 +1344,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                 if not valorMetricAux:
                                     valorMetricAux = valorMetric
 
-                            if j == 13:  
+                            if j == 13:  # Columna Test Case ID
                                 celda_valor = celda.get_text(strip=True)
                                 if pd.isnull(celda_valor) or celda_valor == "":
                                     if valorMetric != valorMetricAux:
@@ -1460,6 +1459,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     print('Página actualizada exitosamente')
                 else:
                     print('Error al actualizar la página')
+
 
         elif monitorizacion == 'KIBANA':
             page = confluence.get_page_by_title(space, title)
