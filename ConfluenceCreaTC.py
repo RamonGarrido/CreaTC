@@ -1395,37 +1395,55 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                     contador = 0
                     for index, fila in df_seleccionado.iterrows():
                         fila_dict = fila.to_dict()
-
-                        # Asegúrate de que el contador no se salga del rango de la lista 'key'
-                        if contador == len(key):
+                        # Verificamos si la columna 13 está vacía (Test Case ID)
+                        if pd.isnull(fila_dict[13]) or fila_dict[13] == "":
+                            if contador == len(key):
                                 break
-                        fila_dict[13] = key[contador]
-                        df.at[index, 13] = fila_dict[13]
-                        contador += 1
+                            fila_dict[13] = key[contador]
+                            df.at[index, 13] = fila_dict[13]
+                            contador += 1
 
                     filas = tabla_despues_de_frase.find_all('tr')
                     cont = 0
+                    valorMetricAux = ""
                     for i, fila in enumerate(filas):
                         celdas = fila.find_all('td')
                         for j, celda in enumerate(celdas):
-                            if j == 13:  # Columna 'Test Case ID'
-                                # Verifica si 'key' tiene suficientes elementos
+                            if j == 0:
+                                celda_valor_aux = celda.get_text(strip=True)
+                                valorMetric = celda_valor_aux.split("{")[0]
+                                if not valorMetricAux:
+                                    valorMetricAux = valorMetric
+
+                            if j == 13:  # Columna Test Case ID
+                                celda_valor = celda.get_text(strip=True)
+                                if pd.isnull(celda_valor) or celda_valor == "":
+                                    if valorMetric != valorMetricAux:
+                                        cont += 1
+                                        valorMetricAux = valorMetric
+                                    if cont < len(key):
+                                        enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                        celda.string = ''  # Limpiar el contenido de la celda
+                                        celda.append(BeautifulSoup(enlace, 'html.parser'))
+
+                    filas_actualizadas = []
+                    for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            if pd.isnull(celdas[13].get_text(strip=True)) or celdas[13].get_text(strip=True) == "":
                                 if cont < len(key):
                                     enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
-                                    celda.string = ''  # Limpiar el contenido de la celda
-                                    celda.append(BeautifulSoup(enlace, 'html.parser'))
+                                    celdas[13].string = ''
+                                    celdas[13].append(BeautifulSoup(enlace, 'html.parser'))
                                     cont += 1
-                                else:
-                                    print(f"Error: No hay más elementos en 'key' para asignar en la fila {i}")
-                                    break  # Salir si no hay más elementos en 'key'
+                        filas_actualizadas.append(fila)
 
                     celdas_fila_13 = []
-                    for fila in filas:
+                    for fila in filas_actualizadas:
                         celdas = fila.find_all('td')
                         if len(celdas) > 13:
                             celdas_fila_13.append(celdas[13])
 
-                    # Procesar las celdas en la columna 13 para ajustar el rowspan
                     i = 0
                     while i < len(celdas_fila_13):
                         valor_celda = celdas_fila_13[i].get_text(strip=True)
@@ -1438,7 +1456,7 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         i = j
 
                     tabla_html_actualizada = str(tabla_despues_de_frase)
-                    tablas[1].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
+                    tablas[0].replace_with(BeautifulSoup(tabla_html_actualizada, 'html.parser'))
 
                 contenido_completo_soup = BeautifulSoup(contenido, 'html.parser')
 
