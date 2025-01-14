@@ -1356,8 +1356,20 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                                         celda.string = ''  # Limpiar el contenido de la celda
                                         celda.append(BeautifulSoup(enlace, 'html.parser'))
 
-                    celdas_fila_13 = []
+                    filas_actualizadas = []
                     for fila in filas:
+                        celdas = fila.find_all('td')
+                        if len(celdas) > 13:
+                            if pd.isnull(celdas[13].get_text(strip=True)) or celdas[13].get_text(strip=True) == "":
+                                if cont < len(key):
+                                    enlace = f'<a href="https://jira.tid.es/browse/{key[cont]}">{key[cont]}</a>'
+                                    celdas[13].string = ''
+                                    celdas[13].append(BeautifulSoup(enlace, 'html.parser'))
+                                    cont += 1
+                        filas_actualizadas.append(fila)
+
+                    celdas_fila_13 = []
+                    for fila in filas_actualizadas:
                         celdas = fila.find_all('td')
                         if len(celdas) > 13:
                             celdas_fila_13.append(celdas[13])
