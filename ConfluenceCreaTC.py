@@ -1397,13 +1397,11 @@ def modificarTesCaseId(key, monitorizacion, modificar):
                         fila_dict = fila.to_dict()
 
                         # Asegúrate de que el contador no se salga del rango de la lista 'key'
-                        if contador < len(key):
-                            fila_dict[13] = key[contador]
-                            df.at[index, 13] = fila_dict[13]
-                            contador += 1
-                        else:
-                            print(f"Error: El contador ({contador}) excede el tamaño de la lista 'key' ({len(key)})")
-                            break  # Si 'key' no tiene más elementos, salimos del bucle
+                        if contador == len(key):
+                                break
+                        fila_dict[13] = key[contador]
+                        df.at[index, 13] = fila_dict[13]
+                        contador += 1
 
                     filas = tabla_despues_de_frase.find_all('tr')
                     cont = 0
